@@ -1,8 +1,8 @@
-# BalanceUtils
+# AutomaticWeaponRemoval
  
 This addon is made for World of Warcraft 3.3.5a
  
-It cancels druid buff Eclipse (Solar) when the next Wrath is already able to proc Eclipse (Lunar), and the best part, this addon do it automatically, you just have to set and forget it. No in-game options, all configs are done in the Lua file.
+This addon remove your weapon automatically when you are controlled by Lady Deathwhisper's Dominate Mind, and more, like removing Paladin's RF buff if you are not a tank. No in-game options, all configs are done in the Lua file.
 
 **Slash commands:**
 
@@ -10,14 +10,14 @@ It cancels druid buff Eclipse (Solar) when the next Wrath is already able to pro
 
 ## Download
 
-You can download the lastest version by [clicking here](https://github.com/SecretX33/BalanceUtils/releases/latest/download/BalanceUtils.zip). 
+You can download the lastest version by [clicking here](https://github.com/SecretX33/AutomaticWeaponRemoval/releases/latest/download/AutomaticWeaponRemoval.zip). 
 
-If you want to download an earlier version of the addon, you can do it by checking the release page [here](https://github.com/SecretX33/BalanceUtils/releases).
+If you want to download an earlier version of the addon, you can do it by checking the release page [here](https://github.com/SecretX33/AutomaticWeaponRemoval/releases).
 
 
 ## Reporting issues
 
-Issues can be reported via the Github [issue tracker](https://github.com/SecretX33/BalanceUtils/labels/Branch-master).
+Issues can be reported via the Github [issue tracker](https://github.com/SecretX33/AutomaticWeaponRemoval/labels/Branch-master).
 
 Please take the time to review existing issues before submitting your own to
 prevent duplicates. Incorrect or poorly formed
