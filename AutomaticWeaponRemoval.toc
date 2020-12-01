@@ -1,0 +1,14 @@
+# You can find updates in https://github.com/SecretX33/AutomaticWeaponRemoval
+#
+## Interface: 30300
+## Title: AutomaticWeaponRemoval
+## Notes: Remove weapons automatically when Lady casts Mind Control on you. No in-game options, configuration via Lua.
+## Author: SecretX (Freezingice)
+## Version: 1.0
+## SavedVariables: AWRDB
+## OptionalDeps: BugSack, !Swatter
+## X-Category: Combat Assist
+## X-Date: 11/30/2020
+
+embeds.xml
+AutomaticWeaponRemoval.lua
