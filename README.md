@@ -2,7 +2,7 @@
  
 This addon is made for World of Warcraft 3.3.5a
  
-This addon remove your weapon automatically when you are controlled by Lady Deathwhisper's Dominate Mind, and more, like removing Paladin's RF buff if you are not a tank. No in-game options, all configs are done in the Lua file.
+This addon remove your weapons automatically when you are controlled by Lady Deathwhisper, and more, like removing Paladin's RF buff if you are not a tank. No in-game options, all configs are done in the Lua file.
 
 **Slash commands:**
 
