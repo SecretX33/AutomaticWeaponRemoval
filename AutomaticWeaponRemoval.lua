@@ -49,9 +49,9 @@ local removeFor = {
    ["MAGE_Fire"]           = false,      -- default is false
    ["MAGE_Frost"]          = false,      -- default is false
    -- Warlock
-   ["WARLOCK_Arcane"]      = false,      -- default is false
-   ["WARLOCK_Fire"]        = false,      -- default is false
-   ["WARLOCK_Frost"]       = false,      -- default is false
+   ["WARLOCK_Affliction"]  = false,      -- default is false
+   ["WARLOCK_Demonology"]  = false,      -- default is false
+   ["WARLOCK_Destruction"] = false,      -- default is false
 }
 -- /run print(select(2,UnitClass("player")))
 
