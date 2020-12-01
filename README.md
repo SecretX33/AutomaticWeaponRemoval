@@ -6,7 +6,7 @@ This addon remove your weapons automatically when you are controlled by Lady Dea
 
 **Slash commands:**
 
-/bu /balanceutils
+/awr /automaticweaponremoval
 
 ## Download
 
