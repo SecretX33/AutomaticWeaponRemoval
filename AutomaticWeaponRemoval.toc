@@ -8,7 +8,7 @@
 ## SavedVariables: AWRDB
 ## OptionalDeps: BugSack, !Swatter
 ## X-Category: Combat Assist
-## X-Date: 11/30/2020
+## X-Date: 12/01/2020
 
 embeds.xml
 AutomaticWeaponRemoval.lua
