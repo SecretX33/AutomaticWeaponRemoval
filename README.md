@@ -17,7 +17,7 @@ If you want to download an earlier version of the addon, you can do it by checki
 
 ## Reporting issues
 
-Issues can be reported via the Github [issue tracker](https://github.com/SecretX33/AutomaticWeaponRemoval/labels/Branch-master).
+Issues can be reported via the Github [issue tracker](https://github.com/SecretX33/AutomaticWeaponRemoval/labels/Branch-main).
 
 Please take the time to review existing issues before submitting your own to
 prevent duplicates. Incorrect or poorly formed
