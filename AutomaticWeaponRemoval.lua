@@ -156,6 +156,14 @@ local function removeWeapons()
    elseif wrDebug then send("class is not selected for weapon removal.") end
 end
 
+local function onDominateMindCast()
+   if sendMessageOnChatWhenControlled and (GetTime() > (sentChatMessageTime + 5)) then -- both GetTimes here prevent sending same message two times in a row, a "just in case" check
+      say(messageToBeSentWhenControlled)
+      sentChatMessageTime = GetTime()
+   end
+   removeWeapons()
+end
+
 local function onDominateMindFade()
    if playerSpec==nil then playerSpec = getPlayerSpec() end
 
@@ -172,12 +180,7 @@ function AWR:COMBAT_LOG_EVENT_UNFILTERED(timestamp, event, srcGUID, srcName, src
    -- If Lady cast Dominate Mind on player
    if spellID == DOMINATE_MIND_ID and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
       if wrDebug then send("Lady just casted " .. GetSpellLink(DOMINATE_MIND_ID) .. " on the player.") end
-
-      if sendMessageOnChatWhenControlled and (GetTime() > (sentChatMessageTime + 5)) then -- both GetTimes here prevent sending same message two times in a row, a "just in case" check
-         say(messageToBeSentWhenControlled)
-         sentChatMessageTime = GetTime()
-      end
-      removeWeapons()
+      onDominateMindCast()
 
    elseif spellID == DOMINATE_MIND_ID and event == "SPELL_AURA_REMOVED" and destName == UnitName("player") then
       if wrDebug then send(GetSpellLink(DOMINATE_MIND_ID) .. " just faded from the player.") end
