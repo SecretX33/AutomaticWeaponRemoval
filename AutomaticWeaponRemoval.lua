@@ -7,9 +7,9 @@ local messageToBeSentWhenControlled         = "I got controlled, CC me NOW!!!"
 local showAddonMessageForWeaponRemoval      = true     -- default is true
 local addonMessageForWeaponRemoval          = "Lady casted control on you, removing weapons."
 
-local removeOnlyBowIfHunter                 = false    -- default is false
-local removePaladinRFAfterControlsEnd       = true     -- default is true, the addon won't remove RF if player is protection paladin even if this is set "true"
-local removeDivinePleaAfterControlledIfHoly = true     -- default is true, the idea is to be able to fully heal someone (or yourself) after dominate mind fades because usually you are low on HP then that happens, so be able to heal 100% is better than 50%
+local removeOnlyBowIfHunter                  = false    -- default is false
+local removePaladinRFAfterControlsEnd        = true     -- default is true, the addon won't remove RF if player is protection paladin even if this is set "true"
+local removeDivinePleaAfterControlsEndIfHoly = true     -- default is true, the idea is to be able to fully heal someone (or yourself) after dominate mind fades because usually you are low on HP then that happens, so be able to heal 100% is better than 50%
 
 local removeFor = {
    -- Hunter
@@ -53,18 +53,19 @@ local removeFor = {
    ["WARLOCK_Demonology"]  = false,      -- default is false
    ["WARLOCK_Destruction"] = false,      -- default is false
 }
--- /run print(select(2,UnitClass("player")))
+-- End of Configurations
+
 
 -- Don't touch anything below
 local wrDebug              = false       -- AWR debug messages
 local DOMINATE_MIND_ID     = 71289       -- Lady's Mind Control ability
-local DOMINATE_MIND        = GetSpellLink(71289)
+local DOMINATE_MIND        = GetSpellLink(DOMINATE_MIND_ID)
 local RIGHTEOUS_FURY_ID    = 25780
-local RIGHTEOUS_FURY       = GetSpellLink(25780)
+local RIGHTEOUS_FURY       = GetSpellLink(RIGHTEOUS_FURY_ID)
 local DIVINE_PLEA_ID       = 54428
-local DIVINE_PLEA          = GetSpellLink(54428)
+local DIVINE_PLEA          = GetSpellLink(DIVINE_PLEA_ID)
 local DIVINE_SACRIFICE_ID  = 64205
-local DIVINE_SACRIFICE     = GetSpellLink(64205)
+local DIVINE_SACRIFICE     = GetSpellLink(DIVINE_SACRIFICE_ID)
 
 local playerClass
 local playerSpec
@@ -160,7 +161,7 @@ local function onDominateMindFade()
 
    if playerClass=="PALADIN" then
       if playerSpec~="Protection" and removePaladinRFAfterControlsEnd then CancelUnitBuff("player", RIGHTEOUS_FURY) end
-      if playerSpec=="Holy" and removeDivinePleaAfterControlledIfHoly then CancelUnitBuff("player", DIVINE_PLEA) end
+      if playerSpec=="Holy" and removeDivinePleaAfterControlsEndIfHoly then CancelUnitBuff("player", DIVINE_PLEA) end
       CancelUnitBuff("player", DIVINE_SACRIFICE)
    end
 end
@@ -191,6 +192,15 @@ function AWR:PLAYER_REGEN_ENABLED()
       if wrDebug then send("Addon variables got zeroed because player leave combat.") end
       sentChatMessageTime  = 0
       sentAddonMessageTime = 0
+      checkIfAddonShouldBeEnabled()
+   end
+end
+
+-- Called when player enters combat
+-- Used here to double check if we have what spec player is, and if not then we call getPlayerSpec to get what spec player is beforehand, yet another "just in case" code that if lady casts dominate mind addon maybe won't have time to query what class player is before the control affects the player
+function AWR:PLAYER_REGEN_DISABLED()
+   if self.db.enabled and playerSpec==nil then
+      playerSpec = getPlayerSpec()
    end
 end
 
@@ -200,6 +210,7 @@ local function regForAllEvents()
 
    AWR:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
    AWR:RegisterEvent("PLAYER_REGEN_ENABLED")
+   AWR:RegisterEvent("PLAYER_REGEN_DISABLED")
    AWR:RegisterEvent("PLAYER_TALENT_UPDATE")
    AWR:RegisterEvent("PLAYER_DIFFICULTY_CHANGED")
 end
@@ -210,12 +221,27 @@ local function unregFromAllEvents()
 
    AWR:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
    AWR:UnregisterEvent("PLAYER_REGEN_ENABLED")
+   AWR:UnregisterEvent("PLAYER_REGEN_DISABLED")
    AWR:UnregisterEvent("PLAYER_TALENT_UPDATE")
    AWR:UnregisterEvent("PLAYER_DIFFICULTY_CHANGED")
 end
 
 function AWR:PLAYER_DIFFICULTY_CHANGED()
    if self.db.enabled then checkIfAddonShouldBeEnabled() end
+end
+
+local function isLadyDead()
+   local instanceName = GetInstanceInfo()
+   if instanceName~="Icecrown Citadel" then return true end  -- If we are not inside ICC, this function will return false so the addon will disable itself
+
+   -- [API_GetInstanceLockTimeRemaining] returns info about current instance, index 4 is encountersComplete, or how many bosses are already dead
+   local bossesKilled = select(4, GetInstanceLockTimeRemaining())
+
+   if bossesKilled~=nil then
+      if wrDebug then send("for this instance, bossesKilled value is " .. bossesKilled) end
+      if bossesKilled > 2 then return true end
+   end
+   return false
 end
 
 -- Checks if addon should be enabled, and enable it if isn't enabled, and disable if it should not be enabled
@@ -230,7 +256,7 @@ local function checkIfAddonShouldBeEnabled()
    --if wrDebug then send("GetInstanceInfo inside checkIfAddonShouldBeEnabled returned " .. GetInstanceInfo()) end
 
    -- Check if user disabled the addon, if the player is inside ICC, if the ICC is either 25n, 10hc or 25hc and if it's 10 man mode then if it's heroic or not
-   if AWR.db.enabled and ((instanceName == "Icecrown Citadel" and (difficultyIndex > 1 or isHeroic)) or wrDebug) then
+   if AWR.db.enabled and ((instanceName == "Icecrown Citadel" and (difficultyIndex > 1 or isHeroic) and not isLadyDead()) or wrDebug) then
       regForAllEvents()
    else
       unregFromAllEvents()
@@ -240,8 +266,6 @@ end
 function AWR:PLAYER_TALENT_UPDATE()
    playerSpec = getPlayerSpec()
    --if wrDebug then send("you have changed your build to " .. playerSpec) end
-   checkIfAddonShouldBeEnabled()
-   removeWeapons()
 end
 
 function AWR:PLAYER_ENTERING_WORLD()
@@ -249,10 +273,29 @@ function AWR:PLAYER_ENTERING_WORLD()
    checkIfAddonShouldBeEnabled()
 end
 
+local function isAddonEnabledForPlayerClass()
+   if(playerClass==nil) then send("playerClass came null inside function to check if addon should be enabled for class, report this"); return; end
+
+   -- If the key is for our class and if it's value is true then return true, else return false
+   for key, value in pairs(removeFor) do
+      if string.match(key, playerClass) and value then
+         return true
+      end
+   end
+   return false
+end
+
 function AWR:ADDON_LOADED(addon)
    if addon ~= "AutomaticWeaponRemoval" then return end
 
-   playerClass = select(2,UnitClass("player"));  -- Get player class
+   playerClass = select(2,UnitClass("player"))  -- Get player class
+   if not isAddonEnabledForPlayerClass() then
+      if wrDebug then send("addon is not enabled for " .. playerClass .. ", disabling the addon.") end
+      self:UnregisterEvent("ADDON_LOADED")
+      return
+   elseif wrDebug then send("addon is enabled for " .. playerClass .. ", nice!")
+   end
+
    groupTalentsLib = LibStub("LibGroupTalents-1.0")   -- Importing LibGroupTalents so I can use it later by using groupTalentsLib variable
    AWRDB = AWRDB or { enabled = true }  -- DB just stores if addon is turned on or off
    self.db = AWRDB
@@ -270,6 +313,7 @@ function AWR:ADDON_LOADED(addon)
       end
    end
    self:RegisterEvent("PLAYER_ENTERING_WORLD")
+   self:UnregisterEvent("ADDON_LOADED")
 end
 
 AWR:RegisterEvent("ADDON_LOADED")
