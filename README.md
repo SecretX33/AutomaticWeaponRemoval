@@ -6,7 +6,13 @@ This addon remove your weapons automatically when you are controlled by Lady Dea
 
 **Slash commands:**
 
-/awr /automaticweaponremoval
+/awr or /automaticweaponremoval - Show addon help
+
+/awr toggle - Toggle addon on and off
+
+/awr on/off - Turn addon on or off
+
+/awr status  - Show if addon is on or off and why, very useful to doublecheck if addon state
 
 ## Download
 

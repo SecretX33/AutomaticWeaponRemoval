@@ -7,6 +7,7 @@ local messageToBeSentWhenControlled         = "I got controlled, CC me NOW!!!"
 local showAddonMessageForWeaponRemoval      = true     -- default is true
 local addonMessageForWeaponRemoval          = "Lady casted control on you, removing weapons."
 
+local turnAddonOnEvenIfClassIsNotSelected    = true     -- default is true
 local removeOnlyBowIfHunter                  = false    -- default is false
 local removePaladinRFAfterControlsEnd        = true     -- default is true, the addon won't remove RF if player is protection paladin even if this is set "true"
 local removeDivinePleaAfterControlsEndIfHoly = true     -- default is true, the idea is to be able to fully heal someone (or yourself) after dominate mind fades because usually you are low on HP then that happens, so be able to heal 100% is better than 50%
@@ -85,14 +86,15 @@ end)
 
 -- Utility functions
 local function send(msg)
-   print(addonPrefix:format(msg))
+   if(msg~=nil) then print(addonPrefix:format(msg)) end
 end
 
 local function say(msg)
-   SendChatMessage(msg, channelToSendMessage)
+   if(msg~=nil) then SendChatMessage(msg, channelToSendMessage) end
 end
 
-local function getSpellName(spellID)
+-- Not using these functions yet
+--[[local function getSpellName(spellID)
    if spellID==nil then return "" end
 
    local spellName = GetSpellInfo(spellID)
@@ -120,6 +122,17 @@ local function doesUnitHaveThisBuff(unit, buff)
 
    return UnitBuff(unit,buff)~=nil
 end
+
+local function getICCDifficultyIndexAsString(index)
+   if index==nil then send("'index' parameter came nil inside function to get instance as name, report this."); return ""; end
+
+   if index==1 then return "10-man normal"
+   elseif index==2 then return "25-man normal"
+   elseif index==3 then return "10-man heroic"
+   elseif index==4 then return "25-man heroic"
+   else send("Report this, unexpected value came as parameter inside function that convert difficultyIndex to the string equivalent, the value passed is \'" .. tostring(index) .. "\'.")
+   end
+end ]]--
 
 local function getPlayerSpec()
    -- the function GetUnitTalentSpec from GroupTalentsLib can return a number if the player has not yet seen that class/build, so another "just in case" code, but I'm not sure what if this number means the talent tree number (like 1 for balance, 3 for restoration) or just the spec slot (player has just two slots), I guess I'll have to shoot in the dark here. ;)
@@ -149,7 +162,7 @@ local function removeWeapons()
          PutItemInBackpack()
       end
 
-      if showAddonMessageForWeaponRemoval and (GetTime() > (sentAddonMessageTime + 5)) then
+      if showAddonMessageForWeaponRemoval and (GetTime() > (sentAddonMessageTime + 5)) then -- GetTime comparison here is preventing sending same message two times in a row, a "just in case" check
          send(addonMessageForWeaponRemoval)
          sentAddonMessageTime = GetTime()
       end
@@ -157,7 +170,7 @@ local function removeWeapons()
 end
 
 local function onDominateMindCast()
-   if sendMessageOnChatWhenControlled and (GetTime() > (sentChatMessageTime + 5)) then -- both GetTimes here prevent sending same message two times in a row, a "just in case" check
+   if sendMessageOnChatWhenControlled and (GetTime() > (sentChatMessageTime + 5)) then -- GetTime comparison here is preventing sending same message two times in a row, a "just in case" check
       say(messageToBeSentWhenControlled)
       sentChatMessageTime = GetTime()
    end
@@ -233,16 +246,16 @@ function AWR:PLAYER_DIFFICULTY_CHANGED()
    if self.db.enabled then checkIfAddonShouldBeEnabled() end
 end
 
-local function isLadyDead()
+local function isLadyNextEncounter()
    local instanceName = GetInstanceInfo()
-   if instanceName~="Icecrown Citadel" then return true end  -- If we are not inside ICC, this function will return false so the addon will disable itself
+   if instanceName~="Icecrown Citadel" then return false end  -- If we are not inside ICC, this function will return false so the addon will disable itself
 
    -- [API_GetInstanceLockTimeRemaining] returns info about current instance, index 4 is encountersComplete, or how many bosses are already dead
    local bossesKilled = select(4, GetInstanceLockTimeRemaining())
 
    if bossesKilled~=nil then
       if wrDebug then send("for this instance, bossesKilled value is " .. bossesKilled) end
-      if bossesKilled > 2 then return true end
+      if bossesKilled == 1 then return true end  -- If Lord Marrowgar is dead
    end
    return false
 end
@@ -259,7 +272,7 @@ local function checkIfAddonShouldBeEnabled()
    --if wrDebug then send("GetInstanceInfo inside checkIfAddonShouldBeEnabled returned " .. GetInstanceInfo()) end
 
    -- Check if user disabled the addon, if the player is inside ICC, if the ICC is either 25n, 10hc or 25hc and if it's 10 man mode then if it's heroic or not
-   if AWR.db.enabled and ((instanceName == "Icecrown Citadel" and (difficultyIndex > 1 or isHeroic) and not isLadyDead()) or wrDebug) then
+   if AWR.db.enabled and ((instanceName == "Icecrown Citadel" and (difficultyIndex > 1 or isHeroic) and isLadyNextEncounter()) or wrDebug) then
       regForAllEvents()
    else
       unregFromAllEvents()
@@ -288,11 +301,39 @@ local function isAddonEnabledForPlayerClass()
    return false
 end
 
+-- Slash commands functions
+-- /awr toggle, on, off
+local function slashCommandToggleAddon(state)
+   if not AWR.db.enabled or state == "on" then
+      AWR.db.enabled = true
+      checkIfAddonShouldBeEnabled()
+      send("|cff00ff00on|r")
+   elseif AWR.db.enabled or state == "off" then
+      AWR.db.enabled = false
+      checkIfAddonShouldBeEnabled()
+      send("|cffff0000off|r")
+   end
+end
+
+-- /awr status
+local function slashCommandStatus()
+   if not AWR.db.enabled then send(AWR_REASON_ADDONISOFF)
+   else
+      local instanceName,_,difficultyIndex,_,_,isHeroic = GetInstanceInfo()
+      local bossesKilled = select(4, GetInstanceLockTimeRemaining())
+
+      if instanceName~="Icecrown Citadel" then send(AWR_REASON_NOTINICC)
+      elseif (difficultyIndex==1 and isHeroic==0) then send(AWR_REASON_RAIDDIFFICULTY)
+      elseif (bossesKilled~=nil and bossesKilled==0) then send(AWR_REASON_LORDWASNOTKILLED)
+      elseif (bossesKilled~=nil and bossesKilled>2) then send(AWR_REASON_LADYISDEAD) end
+   end
+end
+
 function AWR:ADDON_LOADED(addon)
    if addon ~= "AutomaticWeaponRemoval" then return end
 
    playerClass = select(2,UnitClass("player"))  -- Get player class
-   if not isAddonEnabledForPlayerClass() then
+   if not isAddonEnabledForPlayerClass() and not turnAddonOnEvenIfClassIsNotSelected then
       if wrDebug then send("addon is not enabled for " .. playerClass .. ", disabling the addon.") end
       self:UnregisterEvent("ADDON_LOADED")
       return
@@ -304,15 +345,18 @@ function AWR:ADDON_LOADED(addon)
    self.db = AWRDB
    SLASH_AUTOMATICWEAPONREMOVAL1 = "/awr"
    SLASH_AUTOMATICWEAPONREMOVAL2 = "/automaticweaponremoval"
-   SlashCmdList.AUTOMATICWEAPONREMOVAL = function()
-      if not self.db.enabled then
-         self.db.enabled = true
-         checkIfAddonShouldBeEnabled()
-         send("|cff00ff00on|r")
-      else
-         self.db.enabled = false
-         checkIfAddonShouldBeEnabled()
-         send("|cffff0000off|r")
+
+   SlashCmdList.AUTOMATICWEAPONREMOVAL = function(cmd)
+      if(cmd=="help" or cmd=="") then
+         send(AWR_HELP1)
+         send(AWR_HELP2)
+         send(AWR_HELP3)
+      elseif(cmd=="toggle") then slashCommandToggleAddon()
+      elseif(cmd=="on") then slashCommandToggleAddon("on")
+      elseif(cmd=="off") then slashCommandToggleAddon("off")
+      elseif(cmd=="status") then slashCommandStatus()
+      --elseif(cmd=="debug") and wrDebug then
+         --send(getICCDifficultyIndexAsString(5))
       end
    end
    self:RegisterEvent("PLAYER_ENTERING_WORLD")
