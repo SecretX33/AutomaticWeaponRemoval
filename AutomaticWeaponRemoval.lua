@@ -246,6 +246,20 @@ function AWR:PLAYER_DIFFICULTY_CHANGED()
    if self.db.enabled then checkIfAddonShouldBeEnabled() end
 end
 
+local function isLadyDead()
+   local instanceName = GetInstanceInfo()
+   if instanceName~="Icecrown Citadel" then return true end  -- If we are not inside ICC, this function will return false so the addon will disable itself
+
+   -- [API_GetInstanceLockTimeRemaining] returns info about current instance, index 4 is encountersComplete, or how many bosses are already dead
+   local bossesKilled = select(4, GetInstanceLockTimeRemaining())
+
+   if bossesKilled~=nil then
+      if wrDebug then send("for this instance, bossesKilled value is " .. bossesKilled) end
+      if bossesKilled > 2 then return true end
+   end
+   return false
+end
+
 local function isLadyNextEncounter()
    local instanceName = GetInstanceInfo()
    if instanceName~="Icecrown Citadel" then return false end  -- If we are not inside ICC, this function will return false so the addon will disable itself
@@ -272,7 +286,7 @@ local function checkIfAddonShouldBeEnabled()
    --if wrDebug then send("GetInstanceInfo inside checkIfAddonShouldBeEnabled returned " .. GetInstanceInfo()) end
 
    -- Check if user disabled the addon, if the player is inside ICC, if the ICC is either 25n, 10hc or 25hc and if it's 10 man mode then if it's heroic or not
-   if AWR.db.enabled and ((instanceName == "Icecrown Citadel" and (difficultyIndex > 1 or isHeroic) and isLadyNextEncounter()) or wrDebug) then
+   if AWR.db.enabled and ((instanceName == "Icecrown Citadel" and (difficultyIndex > 1 or isHeroic) and not isLadyDead()) or wrDebug) then
       regForAllEvents()
    else
       unregFromAllEvents()
