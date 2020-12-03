@@ -325,7 +325,8 @@ local function slashCommandStatus()
       if instanceName~="Icecrown Citadel" then send(AWR_REASON_NOTINICC)
       elseif (difficultyIndex==1 and isHeroic==0) then send(AWR_REASON_RAIDDIFFICULTY)
       elseif (bossesKilled~=nil and bossesKilled==0) then send(AWR_REASON_LORDWASNOTKILLED)
-      elseif (bossesKilled~=nil and bossesKilled>2) then send(AWR_REASON_LADYISDEAD) end
+      elseif (bossesKilled~=nil and bossesKilled>2) then send(AWR_REASON_LADYISDEAD)
+      elseif isLadyNextEncounter() then send(AWR_REASON_LADYISNEXT) end
    end
 end
 

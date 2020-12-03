@@ -10,3 +10,4 @@ AWR_REASON_NOTINICC = "|cffffe83bstatus:|r addon is |cffff0000off|r because you 
 AWR_REASON_RAIDDIFFICULTY = "|cffffe83bstatus:|r addon is |cffff0000off|r because your ICC is in 10-man normal mode and Lady doesn't cast Dominate Mind in this difficulty."
 AWR_REASON_LORDWASNOTKILLED = "|cffffe83bstatus:|r addon is |cffff0000off|r because your raid didn't kill Lord Marrowgar yet."
 AWR_REASON_LADYISDEAD = "|cffffe83bstatus:|r addon is |cffff0000off|r because Lady is already dead."
+AWR_REASON_LADYISNEXT = "|cffffe83bstatus:|r addon is |cff00ff00on|r because Lady is the next boss."
