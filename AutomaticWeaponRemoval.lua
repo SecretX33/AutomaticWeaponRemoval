@@ -229,50 +229,94 @@ local function regForAllEvents()
    AWR:RegisterEvent("PLAYER_REGEN_DISABLED")
    AWR:RegisterEvent("PLAYER_TALENT_UPDATE")
    AWR:RegisterEvent("PLAYER_DIFFICULTY_CHANGED")
+   --AWR:RegisterEvent("UPDATE_INSTANCE_INFO")
 end
 
 local function unregFromAllEvents()
    if(AWR==nil) then send("frame is nil inside function that unregister all events function, report this"); return; end
    if wrDebug then send("addon is no longer listening to combatlog events.") end
 
+   local instanceName = GetInstanceInfo()
    AWR:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
    AWR:UnregisterEvent("PLAYER_REGEN_ENABLED")
    AWR:UnregisterEvent("PLAYER_REGEN_DISABLED")
    AWR:UnregisterEvent("PLAYER_TALENT_UPDATE")
-   AWR:UnregisterEvent("PLAYER_DIFFICULTY_CHANGED")
+   if instanceName~="Icecrown Citadel" then AWR:UnregisterEvent("PLAYER_DIFFICULTY_CHANGED") end -- Even if the addon unregister from all events, if player is inside ICC 10-man normal its difficulty may still change to heroic
+   --AWR:UnregisterEvent("UPDATE_INSTANCE_INFO")
 end
 
 function AWR:PLAYER_DIFFICULTY_CHANGED()
    if self.db.enabled then checkIfAddonShouldBeEnabled() end
 end
 
-local function isLadyDead()
-   local instanceName = GetInstanceInfo()
-   if instanceName~="Icecrown Citadel" then return true end  -- If we are not inside ICC, this function will return false so the addon will disable itself
+--[[function AWR:UPDATE_INSTANCE_INFO()
+   if wrDebug and not gotRaidInfo then
+      send("UPDATE_INSTANCE_INFO called")
 
-   -- [API_GetInstanceLockTimeRemaining] returns info about current instance, index 4 is encountersComplete, or how many bosses are already dead
-   local bossesKilled = select(4, GetInstanceLockTimeRemaining())
+      local lockTimeLeft,_,encountersTotal,bossesKilled = GetInstanceLockTimeRemaining()
+      local isLKKilled = select(3,GetInstanceLockTimeRemainingEncounter(12))
 
-   if bossesKilled~=nil then
-      if wrDebug then send("for this instance, bossesKilled value is " .. bossesKilled) end
-      if bossesKilled > 2 then return true end
+      send("Time until lock period ends is " .. tostring(lockTimeLeft) .. ".")
+      send("The total number of bosses within this instance is " .. tostring(encountersTotal) .. ".")
+      send("The number of bosses killed within this instance is " .. tostring(bossesKilled) .. ".")
+      send("return from GetInstanceLockTimeRemainingEncounter is " .. tostring(isLKKilled))
+
+      if (bossesKilled~=0 or isLKKilled~=nil) then gotRaidInfo = true end
    end
-   return false
+end]]--
+
+--local function isLadyDead()
+--   local instanceName = GetInstanceInfo()
+--   if instanceName~="Icecrown Citadel" then return true end  -- If we are not inside ICC, this function will return false so the addon will disable itself
+--
+--   -- [API_GetInstanceLockTimeRemaining] returns info about current instance, index 4 is encountersComplete, or how many bosses are already dead
+--   local bossesKilled = select(4, GetInstanceLockTimeRemaining())
+--
+--   if bossesKilled~=nil then
+--      if wrDebug then send("for this instance, bossesKilled value is " .. bossesKilled) end
+--      if bossesKilled > 2 then return true end
+--   end
+--   return false
+--end
+
+-- Utility function since API_GetInstanceLockTimeRemaining is broken, this is a workaround to get instance details for current ICC
+-- return ID, index
+--[[local function getICCRaidInfo(difficultyIndex)
+   local numsaved = GetNumSavedInstances()
+   if numsaved > 0 then
+      for i = 1, numsaved do
+         local instanceName,id,_,diff,locked = GetSavedInstanceInfo(i)
+         if instanceName=="Icecrown Citadel" and locked and diff==difficultyIndex then return id, numsaved end
+      end
+   end
+   return 0, 0  -- Neutral return if current lock for the given difficulty (difficultyIndex) was found
+end
+
+local function getNumberICCBossesKilled(difficultyIndex)
+   local id, index = getICCRaidInfo(difficultyIndex)
+
+   if id ~=0 then
+      local bossesKilled = select(12, GetSavedInstanceInfo(index))
+      if bossesKilled~=nil then return bossesKilled end
+   end
+   return 0
 end
 
 local function isLadyNextEncounter()
-   local instanceName = GetInstanceInfo()
+   local instanceName,_,difficultyIndex = GetInstanceInfo()
    if instanceName~="Icecrown Citadel" then return false end  -- If we are not inside ICC, this function will return false so the addon will disable itself
 
    -- [API_GetInstanceLockTimeRemaining] returns info about current instance, index 4 is encountersComplete, or how many bosses are already dead
+   -- BROKEN API
    local bossesKilled = select(4, GetInstanceLockTimeRemaining())
+   --local bossesKilled = getNumberICCBossesKilled(difficultyIndex)
 
    if bossesKilled~=nil then
       if wrDebug then send("for this instance, bossesKilled value is " .. bossesKilled) end
       if bossesKilled == 1 then return true end  -- If Lord Marrowgar is dead
    end
    return false
-end
+end]]--
 
 -- Checks if addon should be enabled, and enable it if isn't enabled, and disable if it should not be enabled
 local function checkIfAddonShouldBeEnabled()
@@ -286,7 +330,9 @@ local function checkIfAddonShouldBeEnabled()
    --if wrDebug then send("GetInstanceInfo inside checkIfAddonShouldBeEnabled returned " .. GetInstanceInfo()) end
 
    -- Check if user disabled the addon, if the player is inside ICC, if the ICC is either 25n, 10hc or 25hc and if it's 10 man mode then if it's heroic or not
-   if AWR.db.enabled and ((instanceName == "Icecrown Citadel" and (difficultyIndex > 1 or isHeroic) and not isLadyDead()) or wrDebug) then
+   -- BROKEN API, applying temporary fix, the addon will remain active in ICC because I cannot get the number of bossesKilled within the instance
+   --if AWR.db.enabled and ((instanceName == "Icecrown Citadel" and (difficultyIndex > 1 or isHeroic) and not isLadyDead()) or wrDebug) then
+   if AWR.db.enabled and ((instanceName == "Icecrown Citadel" and (difficultyIndex > 1 or isHeroic)) or wrDebug) then
       regForAllEvents()
    else
       unregFromAllEvents()
@@ -334,13 +380,17 @@ local function slashCommandStatus()
    if not AWR.db.enabled then send(AWR_REASON_ADDONISOFF)
    else
       local instanceName,_,difficultyIndex,_,_,isHeroic = GetInstanceInfo()
-      local bossesKilled = select(4, GetInstanceLockTimeRemaining())
+      --local bossesKilled = select(4, GetInstanceLockTimeRemaining())
+      --local bossesKilled = getNumberICCBossesKilled(difficultyIndex)
 
       if instanceName~="Icecrown Citadel" then send(AWR_REASON_NOTINICC)
       elseif (difficultyIndex==1 and isHeroic==0) then send(AWR_REASON_RAIDDIFFICULTY)
-      elseif (bossesKilled~=nil and bossesKilled==0) then send(AWR_REASON_LORDWASNOTKILLED)
-      elseif (bossesKilled~=nil and bossesKilled>2) then send(AWR_REASON_LADYISDEAD)
-      elseif isLadyNextEncounter() then send(AWR_REASON_LADYISNEXT) end
+      else send(AWR_REASON_INSIDEICC)
+      --elseif (bossesKilled~=nil and bossesKilled==0) then send(AWR_REASON_LORDWASNOTKILLED)
+      --elseif (bossesKilled~=nil and bossesKilled>2) then send(AWR_REASON_LADYISDEAD)
+      --elseif isLadyNextEncounter() then send(AWR_REASON_LADYISNEXT) end
+      --else send(AWR_REASON_LADYISNEXT)   -- Temp fix while I don't find why API_GetInstanceLockTimeRemaining is returning "0 false 0 0" even while inside ICC
+      end
    end
 end
 
@@ -348,7 +398,7 @@ function AWR:ADDON_LOADED(addon)
    if addon ~= "AutomaticWeaponRemoval" then return end
 
    playerClass = select(2,UnitClass("player"))  -- Get player class
-   if not isAddonEnabledForPlayerClass() and not turnAddonOnEvenIfClassIsNotSelected then
+   if not turnAddonOnEvenIfClassIsNotSelected and not isAddonEnabledForPlayerClass() then
       if wrDebug then send("addon is not enabled for " .. playerClass .. ", disabling the addon.") end
       self:UnregisterEvent("ADDON_LOADED")
       return
@@ -370,8 +420,9 @@ function AWR:ADDON_LOADED(addon)
       elseif(cmd=="on") then slashCommandToggleAddon("on")
       elseif(cmd=="off") then slashCommandToggleAddon("off")
       elseif(cmd=="status") then slashCommandStatus()
-      --elseif(cmd=="debug") and wrDebug then
-         --send(getICCDifficultyIndexAsString(5))
+      elseif(cmd=="debug") and wrDebug then
+         --send("this icc have " .. getNumberICCBossesKilled(4) .. " bosses killed")
+         --send("is lady next boss? " .. tostring(isLadyNextEncounter()))
       end
    end
    self:RegisterEvent("PLAYER_ENTERING_WORLD")
