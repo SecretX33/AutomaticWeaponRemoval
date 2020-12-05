@@ -354,7 +354,7 @@ end
 
 local function slashCommandSpec()
    if(playerClass==nil) then send(AWR_ADDON_STILL_LOADING) end
-   updatePlayerClassAndSpecIfNeeded()
+   updatePlayerClassAndSpec()
    send("Your class is " .. upperFirstOnly(playerClass) .. (playerSpec and (" and your build is " .. upperFirstOnly(playerSpec)) or "") .. ".")
 end
 
