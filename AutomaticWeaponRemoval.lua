@@ -2,7 +2,7 @@ local AWR = CreateFrame("frame")
 
 -- Configurations
 local sendMessageOnChatWhenControlled       = true     -- default is true
-local channelToSendMessage                  = "SAY"    -- valid options are SAY, YELL, RAID, RAID_WARNING, PARTY
+local channelToSendMessage                  = "YELL"   -- valid options are SAY, YELL, RAID, RAID_WARNING, PARTY
 local messageToBeSentWhenControlled         = "I got controlled, CC me NOW!!!"
 local showAddonMessageForWeaponRemoval      = true     -- default is true
 local addonMessageForWeaponRemoval          = "Lady casted control on you, removing weapons."
@@ -123,14 +123,6 @@ local function isAddonEnabledForPlayerClass()
    return false
 end
 
-local function getPlayerSpec()
-   -- the function GetUnitTalentSpec from GroupTalentsLib can return a number if the player has not yet seen that class/build, so another "just in case" code, but I'm not sure what if this number means the talent tree number (like 1 for balance, 3 for restoration) or just the spec slot (player has just two slots), I guess I'll have to shoot in the dark here. ;)
-   -- I just discovered that this function can also return nil if called when player is logging in (probably because the inspect function doesn't work while logging in)
-   local spec = groupTalentsLib:GetUnitTalentSpec(UnitName("player"))
-   --if wrDebug then send("queried what spec player is, returned " .. tostring(spec)) end
-   return spec
-end
-
 local function updatePlayerLocal()  -- Update variables with player current instance info
    instanceName,_,instanceDifficultyIndex,_,_,instanceIsHeroic = GetInstanceInfo()
 end
@@ -139,17 +131,34 @@ local function updatePlayerLocalIfNeeded()
    if(instanceName==nil or instanceDifficultyIndex==nil or instanceIsHeroic==nil) then updatePlayerLocal() end
 end
 
+local function updatePlayerSpec()
+   -- the function GetUnitTalentSpec from GroupTalentsLib can return a number if the player has not yet seen that class/build, so another "just in case" code, but I'm not sure what if this number means the talent tree number (like 1 for balance, 3 for restoration) or just the spec slot (player has just two slots), I guess I'll have to shoot in the dark here. ;)
+   -- I just discovered that this function can also return nil if called when player is logging in (probably because the inspect function doesn't work while logging in)
+   local spec = groupTalentsLib:GetUnitTalentSpec(UnitName("player"))
+
+   if spec~=nil then
+      playerSpec = spec
+      AWR.db.spec = spec
+   end
+end
+
+local function getPlayerSpec()
+   if playerSpec==nil then
+      updatePlayerSpec()
+   end
+   return playerSpec or AWR.db.spec
+end
+
 local function updatePlayerClassAndSpec()
-   playerSpec = getPlayerSpec() or AWR.db.class
+   updatePlayerSpec()
    if playerSpec~=nil then
-      AWR.db.class = playerSpec
-      -- E.G. PALADIN_Retribution
-      playerClassAndSpec = playerClass .. "_" .. playerSpec
+      playerClassAndSpec = playerClass .. "_" .. playerSpec  -- E.G. PALADIN_Retribution
    end
 end
 
 local function updatePlayerClassAndSpecIfNeeded()
-   if (playerSpec==nil or playerClassAndSpec==nil) then updatePlayerClassAndSpec() end
+   if playerSpec==nil then updatePlayerSpec() end
+   if playerClassAndSpec==nil then updatePlayerClassAndSpec() end
 end
 
 -- Not using these functions yet
@@ -195,7 +204,6 @@ end ]]--
 
 -- Logic functions are under here
 local function removeWeapons()
-   if wrDebug then send("inside function removeWeapon, string classAndSpec is " .. playerClassAndSpec) end
    updatePlayerClassAndSpecIfNeeded()
 
    if removeFor[playerClassAndSpec] then
@@ -229,8 +237,8 @@ local function onDominateMindFade()
    updatePlayerClassAndSpecIfNeeded()
 
    if playerClass=="PALADIN" then
-      if playerSpec~="Protection" and removePaladinRFAfterControlsEnd then CancelUnitBuff("player", RIGHTEOUS_FURY) end
-      if playerSpec=="Holy" and removeDivinePleaAfterControlsEndIfHoly then CancelUnitBuff("player", DIVINE_PLEA) end
+      if getPlayerSpec()~="Protection" and removePaladinRFAfterControlsEnd then CancelUnitBuff("player", RIGHTEOUS_FURY) end
+      if getPlayerSpec()=="Holy" and removeDivinePleaAfterControlsEndIfHoly then CancelUnitBuff("player", DIVINE_PLEA) end
       CancelUnitBuff("player", DIVINE_SACRIFICE)
    end
 end
@@ -310,6 +318,7 @@ end
 
 function AWR:PLAYER_TALENT_UPDATE()
    updatePlayerClassAndSpec()
+   if wrDebug then send("updated talents, now you are using " .. playerSpec or "Unknown") end
 end
 
 function AWR:PLAYER_ENTERING_WORLD()
@@ -323,7 +332,7 @@ function AWR:PLAYER_ENTERING_WORLD()
 end
 
 -- Slash commands functions
--- /awr toggle, on, off
+-- toggle, on, off
 local function slashCommandToggleAddon(state)
    if state == "on" or (not AWR.db.enabled and state==nil) then
       AWR.db.enabled = true
@@ -336,7 +345,7 @@ local function slashCommandToggleAddon(state)
    end
 end
 
--- /awr status
+-- status, state
 local function slashCommandStatus()
    if not AWR.db.enabled then send(AWR_REASON_ADDONISOFF)
    else
@@ -347,15 +356,30 @@ local function slashCommandStatus()
    end
 end
 
+-- version, ver
 local function slashCommandVersion()
    if(addonVersion~=nil) then send("version " .. addonVersion)
    else send(AWR_ADDON_STILL_LOADING) end
 end
 
+-- spec
 local function slashCommandSpec()
    if(playerClass==nil) then send(AWR_ADDON_STILL_LOADING) end
    updatePlayerClassAndSpec()
    send("Your class is " .. upperFirstOnly(playerClass) .. (playerSpec and (" and your build is " .. upperFirstOnly(playerSpec)) or "") .. ".")
+end
+
+-- debug
+local function slashCommandDebug()
+   if not wrDebug then
+      wrDebug = true
+      AWR.db.debug = true
+      send("debug mode turned |cff00ff00on|r")
+   else
+      wrDebug = false
+      AWR.db.debug = false
+      send("debug mode turned |cffff0000off|r")
+   end
 end
 
 local function slashCommand(cmd)
@@ -371,6 +395,8 @@ local function slashCommand(cmd)
    elseif(cmd=="status" or cmd=="state") then slashCommandStatus()
    elseif(cmd=="version" or cmd=="ver") then slashCommandVersion()
    elseif(cmd=="spec") then slashCommandSpec()
+   elseif(cmd=="removeweapon" or cmd=="removeweapons" or cmd=="rw") then onDominateMindCast()
+   elseif(cmd=="debug") then slashCommandDebug()
    end
 end
 -- End of slash commands function
@@ -390,6 +416,7 @@ function AWR:ADDON_LOADED(addon)
    groupTalentsLib = LibStub("LibGroupTalents-1.0")   -- Importing LibGroupTalents so I can use it later by using groupTalentsLib variable
    AWRDB = AWRDB or { enabled = true }  -- DB just stores if addon is turned on or off
    self.db = AWRDB
+   wrDebug = self.db.debug or wrDebug
    SLASH_AUTOMATICWEAPONREMOVAL1 = "/awr"
    SLASH_AUTOMATICWEAPONREMOVAL2 = "/automaticweaponremoval"
    SlashCmdList.AUTOMATICWEAPONREMOVAL = function(cmd) slashCommand(cmd) end
