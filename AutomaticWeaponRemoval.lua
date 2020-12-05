@@ -80,6 +80,7 @@ local instanceDifficultyIndex
 local instanceIsHeroic
 
 local groupTalentsLib
+local addonVersion
 local addonPrefix = "|cff2f6af5AWR:|r %s"
 
 -- Upvalues
@@ -329,6 +330,25 @@ local function slashCommandStatus()
       else send(AWR_REASON_INSIDEICC) end
    end
 end
+
+local function slashCommandVersion()
+   if(addonVersion~=nil) then send("version " .. addonVersion)
+   else send(AWR_ADDON_STILL_LOADING) end
+end
+
+local function slashCommand(cmd)
+   if(cmd~=nil) then cmd:lower() end
+   if(cmd=="help" or cmd=="?" or cmd=="") then
+      send(AWR_HELP1)
+      send(AWR_HELP2)
+      send(AWR_HELP3)
+   elseif(cmd=="toggle") then slashCommandToggleAddon()
+   elseif(cmd=="on") then slashCommandToggleAddon("on")
+   elseif(cmd=="off") then slashCommandToggleAddon("off")
+   elseif(cmd=="status" or cmd=="state") then slashCommandStatus()
+   elseif(cmd=="version" or cmd=="ver") then slashCommandVersion()
+   end
+end
 -- End of slash commands function
 
 function AWR:ADDON_LOADED(addon)
@@ -342,24 +362,14 @@ function AWR:ADDON_LOADED(addon)
    elseif wrDebug then send("addon is enabled for " .. playerClass .. ", nice!")
    end
 
+   addonVersion = GetAddOnMetadata("AutomaticWeaponRemoval", "Version")
    groupTalentsLib = LibStub("LibGroupTalents-1.0")   -- Importing LibGroupTalents so I can use it later by using groupTalentsLib variable
    AWRDB = AWRDB or { enabled = true }  -- DB just stores if addon is turned on or off
    self.db = AWRDB
    SLASH_AUTOMATICWEAPONREMOVAL1 = "/awr"
    SLASH_AUTOMATICWEAPONREMOVAL2 = "/automaticweaponremoval"
+   SlashCmdList.AUTOMATICWEAPONREMOVAL = function(cmd) slashCommand(cmd) end
 
-   SlashCmdList.AUTOMATICWEAPONREMOVAL = function(cmd)
-      if(cmd=="help" or cmd=="") then
-         send(AWR_HELP1)
-         send(AWR_HELP2)
-         send(AWR_HELP3)
-      elseif(cmd=="toggle") then slashCommandToggleAddon()
-      elseif(cmd=="on") then slashCommandToggleAddon("on")
-      elseif(cmd=="off") then slashCommandToggleAddon("off")
-      elseif(cmd=="status") then slashCommandStatus()
-      --elseif(cmd=="debug") and wrDebug then
-      end
-   end
    self:RegisterEvent("PLAYER_ENTERING_WORLD")
    self:UnregisterEvent("ADDON_LOADED")
 end

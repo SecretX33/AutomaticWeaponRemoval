@@ -14,6 +14,8 @@ This addon remove your weapons automatically when you are controlled by Lady Dea
 
 /awr status - Show if addon is on or off and why, very useful to double check current addon state
 
+/awr version - Show addon version
+
 ## Download
 
 You can download the lastest version by [clicking here](https://github.com/SecretX33/AutomaticWeaponRemoval/releases/latest/download/AutomaticWeaponRemoval.zip). 

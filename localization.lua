@@ -9,3 +9,5 @@ AWR_REASON_ADDONISOFF = "|cffffe83bstatus:|r addon is |cffff0000off|r because it
 AWR_REASON_NOTINICC = "|cffffe83bstatus:|r addon is |cffff0000off|r because you are not inside ICC right now."
 AWR_REASON_RAIDDIFFICULTY = "|cffffe83bstatus:|r addon is |cffff0000off|r because your ICC is in 10-man normal mode and Lady doesn't cast Dominate Mind in this difficulty."
 AWR_REASON_INSIDEICC = "|cffffe83bstatus:|r addon is |cff00ff00on|r because you are inside ICC."
+
+AWR_ADDON_STILL_LOADING = "Try again later, addon still loading..."
