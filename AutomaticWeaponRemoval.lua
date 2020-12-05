@@ -337,7 +337,7 @@ local function slashCommandVersion()
 end
 
 local function slashCommand(cmd)
-   if(cmd~=nil) then cmd:lower() end
+   if(cmd~=nil) then cmd = cmd:lower() end
    if(cmd=="help" or cmd=="?" or cmd=="") then
       send(AWR_HELP1)
       send(AWR_HELP2)
