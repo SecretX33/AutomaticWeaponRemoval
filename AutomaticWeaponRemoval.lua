@@ -358,13 +358,13 @@ end
 
 -- version, ver
 local function slashCommandVersion()
-   if(addonVersion~=nil) then send("version " .. addonVersion)
-   else send(AWR_ADDON_STILL_LOADING) end
+   if(addonVersion==nil) then send(AWR_ADDON_STILL_LOADING); return; end
+   send("version " .. addonVersion)
 end
 
 -- spec
 local function slashCommandSpec()
-   if(playerClass==nil) then send(AWR_ADDON_STILL_LOADING) end
+   if(playerClass==nil) then send(AWR_ADDON_STILL_LOADING); return; end
    updatePlayerClassAndSpec()
    send("Your class is " .. upperFirstOnly(playerClass) .. (playerSpec and (" and your build is " .. upperFirstOnly(playerSpec)) or "") .. ".")
 end
