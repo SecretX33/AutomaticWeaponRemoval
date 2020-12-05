@@ -70,8 +70,14 @@ local DIVINE_SACRIFICE     = GetSpellLink(DIVINE_SACRIFICE_ID)
 
 local playerClass
 local playerSpec
+local playerClassAndSpec
 local sentChatMessageTime  = 0       -- Last time the messageToBeSentWhenControlled were sent
 local sentAddonMessageTime = 0       -- Last time the addonMessageForWeaponRemoval were sent
+
+-- Player current instance info
+local instanceName
+local instanceDifficultyIndex
+local instanceIsHeroic
 
 local groupTalentsLib
 local addonPrefix = "|cff2f6af5AWR:|r %s"
@@ -91,6 +97,45 @@ end
 
 local function say(msg)
    if(msg~=nil) then SendChatMessage(msg, channelToSendMessage) end
+end
+
+local function isAddonEnabledForPlayerClass()
+   if(playerClass==nil) then send("playerClass came null inside function to check if addon should be enabled for class, report this"); return; end
+
+   -- If the key is for our class and if it's value is true then return true, else return false
+   for key, value in pairs(removeFor) do
+      if string.match(key, playerClass) and value then
+         return true
+      end
+   end
+   return false
+end
+
+local function updatePlayerLocal()  -- Update variables with player current instance info
+   instanceName,_, instanceDifficultyIndex,_,_, instanceIsHeroic = GetInstanceInfo()
+end
+
+local function updatePlayerLocalIfNeeded()
+   if(instanceName==nil or instanceDifficultyIndex==nil or instanceIsHeroic==nil) then updatePlayerLocal() end
+end
+
+local function getPlayerSpec()
+   -- the function GetUnitTalentSpec from GroupTalentsLib can return a number if the player has not yet seen that class/build, so another "just in case" code, but I'm not sure what if this number means the talent tree number (like 1 for balance, 3 for restoration) or just the spec slot (player has just two slots), I guess I'll have to shoot in the dark here. ;)
+   -- I just discovered that this function can also return nil if called when player is logging in (probably because the inspect function doesn't work while logging in)
+   local spec = groupTalentsLib:GetUnitTalentSpec(UnitName("player"))
+   --if wrDebug then send("queried what spec player is, returned " .. tostring(spec)) end
+   return spec
+end
+
+local function updatePlayerClassAndSpec()
+   playerSpec = getPlayerSpec()
+   if playerSpec~=nil then playerClassAndSpec = playerClass .. "_" .. playerSpec end
+end
+
+local function updatePlayerClassAndSpecIfNeeded()
+   if playerSpec==nil then playerSpec = getPlayerSpec() end
+   -- E.G. PALADIN_Retribution
+   if (playerClassAndSpec==nil and playerSpec~=nil) then updatePlayerClassAndSpec() end
 end
 
 -- Not using these functions yet
@@ -134,21 +179,10 @@ local function getICCDifficultyIndexAsString(index)
    end
 end ]]--
 
-local function getPlayerSpec()
-   -- the function GetUnitTalentSpec from GroupTalentsLib can return a number if the player has not yet seen that class/build, so another "just in case" code, but I'm not sure what if this number means the talent tree number (like 1 for balance, 3 for restoration) or just the spec slot (player has just two slots), I guess I'll have to shoot in the dark here. ;)
-   -- I just discovered that this function can also return nil if called when player is logging in (probably because the inspect function doesn't work while logging in), so I added the 'nil' as returning true to circumvent this issue
-   local spec = groupTalentsLib:GetUnitTalentSpec(UnitName("player"))
-   --if wrDebug then send("queried what spec player is, returned " .. tostring(spec)) end
-   return spec
-end
-
 -- Logic functions are under here
 local function removeWeapons()
-   if playerSpec==nil then playerSpec = getPlayerSpec() end
-
-   -- E.G. PALADIN_Retribution
-   local playerClassAndSpec = playerClass .. "_" .. playerSpec
    if wrDebug then send("inside function removeWeapon, string classAndSpec is " .. playerClassAndSpec) end
+   updatePlayerClassAndSpecIfNeeded()
 
    if removeFor[playerClassAndSpec] then
       if playerClass~="HUNTER" or not removeOnlyBowIfHunter then
@@ -178,7 +212,7 @@ local function onDominateMindCast()
 end
 
 local function onDominateMindFade()
-   if playerSpec==nil then playerSpec = getPlayerSpec() end
+   updatePlayerClassAndSpecIfNeeded()
 
    if playerClass=="PALADIN" then
       if playerSpec~="Protection" and removePaladinRFAfterControlsEnd then CancelUnitBuff("player", RIGHTEOUS_FURY) end
@@ -215,9 +249,7 @@ end
 -- Called when player enters combat
 -- Used here to double check if we have what spec player is, and if not then we call getPlayerSpec to get what spec player is beforehand, yet another "just in case" code that if lady casts dominate mind addon maybe won't have time to query what class player is before the control affects the player
 function AWR:PLAYER_REGEN_DISABLED()
-   if self.db.enabled and playerSpec==nil then
-      playerSpec = getPlayerSpec()
-   end
+   updatePlayerClassAndSpecIfNeeded()
 end
 
 local function regForAllEvents()
@@ -229,146 +261,58 @@ local function regForAllEvents()
    AWR:RegisterEvent("PLAYER_REGEN_DISABLED")
    AWR:RegisterEvent("PLAYER_TALENT_UPDATE")
    AWR:RegisterEvent("PLAYER_DIFFICULTY_CHANGED")
-   --AWR:RegisterEvent("UPDATE_INSTANCE_INFO")
 end
 
 local function unregFromAllEvents()
    if(AWR==nil) then send("frame is nil inside function that unregister all events function, report this"); return; end
    if wrDebug then send("addon is no longer listening to combatlog events.") end
 
-   local instanceName = GetInstanceInfo()
    AWR:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
    AWR:UnregisterEvent("PLAYER_REGEN_ENABLED")
    AWR:UnregisterEvent("PLAYER_REGEN_DISABLED")
    AWR:UnregisterEvent("PLAYER_TALENT_UPDATE")
    if instanceName~="Icecrown Citadel" then AWR:UnregisterEvent("PLAYER_DIFFICULTY_CHANGED") end -- Even if the addon unregister from all events, if player is inside ICC 10-man normal its difficulty may still change to heroic
-   --AWR:UnregisterEvent("UPDATE_INSTANCE_INFO")
 end
-
-function AWR:PLAYER_DIFFICULTY_CHANGED()
-   if self.db.enabled then checkIfAddonShouldBeEnabled() end
-end
-
---[[function AWR:UPDATE_INSTANCE_INFO()
-   if wrDebug and not gotRaidInfo then
-      send("UPDATE_INSTANCE_INFO called")
-
-      local lockTimeLeft,_,encountersTotal,bossesKilled = GetInstanceLockTimeRemaining()
-      local isLKKilled = select(3,GetInstanceLockTimeRemainingEncounter(12))
-
-      send("Time until lock period ends is " .. tostring(lockTimeLeft) .. ".")
-      send("The total number of bosses within this instance is " .. tostring(encountersTotal) .. ".")
-      send("The number of bosses killed within this instance is " .. tostring(bossesKilled) .. ".")
-      send("return from GetInstanceLockTimeRemainingEncounter is " .. tostring(isLKKilled))
-
-      if (bossesKilled~=0 or isLKKilled~=nil) then gotRaidInfo = true end
-   end
-end]]--
-
---local function isLadyDead()
---   local instanceName = GetInstanceInfo()
---   if instanceName~="Icecrown Citadel" then return true end  -- If we are not inside ICC, this function will return false so the addon will disable itself
---
---   -- [API_GetInstanceLockTimeRemaining] returns info about current instance, index 4 is encountersComplete, or how many bosses are already dead
---   local bossesKilled = select(4, GetInstanceLockTimeRemaining())
---
---   if bossesKilled~=nil then
---      if wrDebug then send("for this instance, bossesKilled value is " .. bossesKilled) end
---      if bossesKilled > 2 then return true end
---   end
---   return false
---end
-
--- Utility function since API_GetInstanceLockTimeRemaining is broken, this is a workaround to get instance details for current ICC
--- return ID, index
---[[local function getICCRaidInfo(difficultyIndex)
-   local numsaved = GetNumSavedInstances()
-   if numsaved > 0 then
-      for i = 1, numsaved do
-         local instanceName,id,_,diff,locked = GetSavedInstanceInfo(i)
-         if instanceName=="Icecrown Citadel" and locked and diff==difficultyIndex then return id, numsaved end
-      end
-   end
-   return 0, 0  -- Neutral return if current lock for the given difficulty (difficultyIndex) was found
-end
-
-local function getNumberICCBossesKilled(difficultyIndex)
-   local id, index = getICCRaidInfo(difficultyIndex)
-
-   if id ~=0 then
-      local bossesKilled = select(12, GetSavedInstanceInfo(index))
-      if bossesKilled~=nil then return bossesKilled end
-   end
-   return 0
-end
-
-local function isLadyNextEncounter()
-   local instanceName,_,difficultyIndex = GetInstanceInfo()
-   if instanceName~="Icecrown Citadel" then return false end  -- If we are not inside ICC, this function will return false so the addon will disable itself
-
-   -- [API_GetInstanceLockTimeRemaining] returns info about current instance, index 4 is encountersComplete, or how many bosses are already dead
-   -- BROKEN API
-   local bossesKilled = select(4, GetInstanceLockTimeRemaining())
-   --local bossesKilled = getNumberICCBossesKilled(difficultyIndex)
-
-   if bossesKilled~=nil then
-      if wrDebug then send("for this instance, bossesKilled value is " .. bossesKilled) end
-      if bossesKilled == 1 then return true end  -- If Lord Marrowgar is dead
-   end
-   return false
-end]]--
 
 -- Checks if addon should be enabled, and enable it if isn't enabled, and disable if it should not be enabled
 local function checkIfAddonShouldBeEnabled()
    if(AWR==nil) then send("frame came nil inside function that check if this addon should be enabled, report this"); return; end
-   -- instanceName is index 1, difficultyIndex is index 3 (return 1 means 10 normal, 2 means 25 normal, 3 means 10 heroic and 4 means 25 heroic), isHeroic is index 6
-   -- /run print(GetInstanceInfo())
-   -- while in Dalaran it returned Northrend none 1  0 0 false
-   -- while inside ICC it returned Icecrown Citadel raid 2 25 Player 25 0 true
 
-   local instanceName,_,difficultyIndex,_,_,isHeroic = GetInstanceInfo()
-   --if wrDebug then send("GetInstanceInfo inside checkIfAddonShouldBeEnabled returned " .. GetInstanceInfo()) end
-
+   updatePlayerLocalIfNeeded()
    -- Check if user disabled the addon, if the player is inside ICC, if the ICC is either 25n, 10hc or 25hc and if it's 10 man mode then if it's heroic or not
-   -- BROKEN API, applying temporary fix, the addon will remain active in ICC because I cannot get the number of bossesKilled within the instance
-   --if AWR.db.enabled and ((instanceName == "Icecrown Citadel" and (difficultyIndex > 1 or isHeroic) and not isLadyDead()) or wrDebug) then
-   if AWR.db.enabled and ((instanceName == "Icecrown Citadel" and (difficultyIndex > 1 or isHeroic)) or wrDebug) then
+   -- The addon will remain active inside ICC because I cannot get the number of bossesKilled within the instance
+   if AWR.db.enabled and ((instanceName == "Icecrown Citadel" and (instanceDifficultyIndex > 1 or instanceIsHeroic)) or wrDebug) then
       regForAllEvents()
    else
       unregFromAllEvents()
    end
 end
 
-function AWR:PLAYER_TALENT_UPDATE()
-   playerSpec = getPlayerSpec()
-   --if wrDebug then send("you have changed your build to " .. playerSpec) end
-end
-
-function AWR:PLAYER_ENTERING_WORLD()
-   if playerSpec==nil then playerSpec = getPlayerSpec() end
+function AWR:PLAYER_DIFFICULTY_CHANGED()
    checkIfAddonShouldBeEnabled()
 end
 
-local function isAddonEnabledForPlayerClass()
-   if(playerClass==nil) then send("playerClass came null inside function to check if addon should be enabled for class, report this"); return; end
+function AWR:PLAYER_TALENT_UPDATE()
+   updatePlayerClassAndSpec()
+end
 
-   -- If the key is for our class and if it's value is true then return true, else return false
-   for key, value in pairs(removeFor) do
-      if string.match(key, playerClass) and value then
-         return true
-      end
-   end
-   return false
+function AWR:PLAYER_ENTERING_WORLD()
+   -- instanceName is index 1, difficultyIndex is index 3 (return 1 means 10 normal, 2 means 25 normal, 3 means 10 heroic and 4 means 25 heroic), isHeroic is index 6
+   -- /run print(GetInstanceInfo())
+   -- while in Dalaran it returned Northrend none 1  0 0 false
+   -- while inside ICC it returned Icecrown Citadel raid 2 25 Player 25 0 true
+   updatePlayerLocal()
+   checkIfAddonShouldBeEnabled()
 end
 
 -- Slash commands functions
 -- /awr toggle, on, off
 local function slashCommandToggleAddon(state)
-   if not AWR.db.enabled or state == "on" then
+   if state == "on" or (not AWR.db.enabled and state==nil) then
       AWR.db.enabled = true
       checkIfAddonShouldBeEnabled()
       send("|cff00ff00on|r")
-   elseif AWR.db.enabled or state == "off" then
+   elseif state == "off" or (AWR.db.enabled and state==nil) then
       AWR.db.enabled = false
       checkIfAddonShouldBeEnabled()
       send("|cffff0000off|r")
@@ -379,20 +323,13 @@ end
 local function slashCommandStatus()
    if not AWR.db.enabled then send(AWR_REASON_ADDONISOFF)
    else
-      local instanceName,_,difficultyIndex,_,_,isHeroic = GetInstanceInfo()
-      --local bossesKilled = select(4, GetInstanceLockTimeRemaining())
-      --local bossesKilled = getNumberICCBossesKilled(difficultyIndex)
-
+      updatePlayerLocalIfNeeded()
       if instanceName~="Icecrown Citadel" then send(AWR_REASON_NOTINICC)
       elseif (difficultyIndex==1 and isHeroic==0) then send(AWR_REASON_RAIDDIFFICULTY)
-      else send(AWR_REASON_INSIDEICC)
-      --elseif (bossesKilled~=nil and bossesKilled==0) then send(AWR_REASON_LORDWASNOTKILLED)
-      --elseif (bossesKilled~=nil and bossesKilled>2) then send(AWR_REASON_LADYISDEAD)
-      --elseif isLadyNextEncounter() then send(AWR_REASON_LADYISNEXT) end
-      --else send(AWR_REASON_LADYISNEXT)   -- Temp fix while I don't find why API_GetInstanceLockTimeRemaining is returning "0 false 0 0" even while inside ICC
-      end
+      else send(AWR_REASON_INSIDEICC) end
    end
 end
+-- End of slash commands function
 
 function AWR:ADDON_LOADED(addon)
    if addon ~= "AutomaticWeaponRemoval" then return end
@@ -420,9 +357,7 @@ function AWR:ADDON_LOADED(addon)
       elseif(cmd=="on") then slashCommandToggleAddon("on")
       elseif(cmd=="off") then slashCommandToggleAddon("off")
       elseif(cmd=="status") then slashCommandStatus()
-      elseif(cmd=="debug") and wrDebug then
-         --send("this icc have " .. getNumberICCBossesKilled(4) .. " bosses killed")
-         --send("is lady next boss? " .. tostring(isLadyNextEncounter()))
+      --elseif(cmd=="debug") and wrDebug then
       end
    end
    self:RegisterEvent("PLAYER_ENTERING_WORLD")

@@ -12,7 +12,7 @@ This addon remove your weapons automatically when you are controlled by Lady Dea
 
 /awr on/off - Turn addon on or off
 
-/awr status  - Show if addon is on or off and why, very useful to doublecheck if addon state
+/awr status - Show if addon is on or off and why, very useful to double check current addon state
 
 ## Download
 
