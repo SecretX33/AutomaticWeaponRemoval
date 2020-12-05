@@ -18,6 +18,8 @@ This addon remove your weapons automatically when you are controlled by Lady Dea
 
 /awr spec - See what class and spec you are
 
+/awr rw/removeweapon - Simulate what addon will do when Lady controls you
+
 ## Download
 
 You can download the lastest version by [clicking here](https://github.com/SecretX33/AutomaticWeaponRemoval/releases/latest/download/AutomaticWeaponRemoval.zip). 
