@@ -100,6 +100,17 @@ local function say(msg)
    if(msg~=nil) then SendChatMessage(msg, channelToSendMessage) end
 end
 
+local function upperFirst(str)
+   if(str==nil) then return "" end
+   return (str:gsub("^%l", string.upper))
+end
+
+local function upperFirstOnly(str)
+   if(str==nil) then return "" end
+   return upperFirst(str:lower())
+end
+
+
 local function isAddonEnabledForPlayerClass()
    if(playerClass==nil) then send("playerClass came null inside function to check if addon should be enabled for class, report this"); return; end
 
@@ -112,14 +123,6 @@ local function isAddonEnabledForPlayerClass()
    return false
 end
 
-local function updatePlayerLocal()  -- Update variables with player current instance info
-   instanceName,_, instanceDifficultyIndex,_,_, instanceIsHeroic = GetInstanceInfo()
-end
-
-local function updatePlayerLocalIfNeeded()
-   if(instanceName==nil or instanceDifficultyIndex==nil or instanceIsHeroic==nil) then updatePlayerLocal() end
-end
-
 local function getPlayerSpec()
    -- the function GetUnitTalentSpec from GroupTalentsLib can return a number if the player has not yet seen that class/build, so another "just in case" code, but I'm not sure what if this number means the talent tree number (like 1 for balance, 3 for restoration) or just the spec slot (player has just two slots), I guess I'll have to shoot in the dark here. ;)
    -- I just discovered that this function can also return nil if called when player is logging in (probably because the inspect function doesn't work while logging in)
@@ -128,15 +131,25 @@ local function getPlayerSpec()
    return spec
 end
 
+local function updatePlayerLocal()  -- Update variables with player current instance info
+   instanceName,_,instanceDifficultyIndex,_,_,instanceIsHeroic = GetInstanceInfo()
+end
+
+local function updatePlayerLocalIfNeeded()
+   if(instanceName==nil or instanceDifficultyIndex==nil or instanceIsHeroic==nil) then updatePlayerLocal() end
+end
+
 local function updatePlayerClassAndSpec()
-   playerSpec = getPlayerSpec()
-   if playerSpec~=nil then playerClassAndSpec = playerClass .. "_" .. playerSpec end
+   playerSpec = getPlayerSpec() or AWR.db.class
+   if playerSpec~=nil then
+      AWR.db.class = playerSpec
+      -- E.G. PALADIN_Retribution
+      playerClassAndSpec = playerClass .. "_" .. playerSpec
+   end
 end
 
 local function updatePlayerClassAndSpecIfNeeded()
-   if playerSpec==nil then playerSpec = getPlayerSpec() end
-   -- E.G. PALADIN_Retribution
-   if (playerClassAndSpec==nil and playerSpec~=nil) then updatePlayerClassAndSpec() end
+   if (playerSpec==nil or playerClassAndSpec==nil) then updatePlayerClassAndSpec() end
 end
 
 -- Not using these functions yet
@@ -250,7 +263,7 @@ end
 -- Called when player enters combat
 -- Used here to double check if we have what spec player is, and if not then we call getPlayerSpec to get what spec player is beforehand, yet another "just in case" code that if lady casts dominate mind addon maybe won't have time to query what class player is before the control affects the player
 function AWR:PLAYER_REGEN_DISABLED()
-   updatePlayerClassAndSpecIfNeeded()
+   updatePlayerClassAndSpec()
 end
 
 local function regForAllEvents()
@@ -284,8 +297,10 @@ local function checkIfAddonShouldBeEnabled()
    -- The addon will remain active inside ICC because I cannot get the number of bossesKilled within the instance
    if AWR.db.enabled and ((instanceName == "Icecrown Citadel" and (instanceDifficultyIndex > 1 or instanceIsHeroic)) or wrDebug) then
       regForAllEvents()
+      return true
    else
       unregFromAllEvents()
+      return false
    end
 end
 
@@ -303,6 +318,7 @@ function AWR:PLAYER_ENTERING_WORLD()
    -- while in Dalaran it returned Northrend none 1  0 0 false
    -- while inside ICC it returned Icecrown Citadel raid 2 25 Player 25 0 true
    updatePlayerLocal()
+   updatePlayerClassAndSpecIfNeeded()
    checkIfAddonShouldBeEnabled()
 end
 
@@ -336,6 +352,12 @@ local function slashCommandVersion()
    else send(AWR_ADDON_STILL_LOADING) end
 end
 
+local function slashCommandSpec()
+   if(playerClass==nil) then send(AWR_ADDON_STILL_LOADING) end
+   updatePlayerClassAndSpecIfNeeded()
+   send("Your class is " .. upperFirstOnly(playerClass) .. (playerSpec and (" and your build is " .. upperFirstOnly(playerSpec)) or "") .. ".")
+end
+
 local function slashCommand(cmd)
    if(cmd~=nil) then cmd = cmd:lower() end
    if(cmd=="help" or cmd=="?" or cmd=="") then
@@ -348,6 +370,7 @@ local function slashCommand(cmd)
    elseif(cmd=="off") then slashCommandToggleAddon("off")
    elseif(cmd=="status" or cmd=="state") then slashCommandStatus()
    elseif(cmd=="version" or cmd=="ver") then slashCommandVersion()
+   elseif(cmd=="spec") then slashCommandSpec()
    end
 end
 -- End of slash commands function
