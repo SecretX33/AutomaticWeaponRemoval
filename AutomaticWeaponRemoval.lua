@@ -302,7 +302,6 @@ function AWR:PLAYER_REGEN_ENABLED()
       if wrDebug then send("Addon variables got zeroed because player leave combat.") end
       sentChatMessageTime  = 0
       sentAddonMessageTime = 0
-      checkIfAddonShouldBeEnabled()
    end
 end
 
