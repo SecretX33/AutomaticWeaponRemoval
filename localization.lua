@@ -2,8 +2,8 @@
 -- Version 1.0.5
 
 AWR_HELP1 = "This addon will automatically remove your weapons and bow when Lady Deathwhisper controls you."
-AWR_HELP2 = "Try typing \'/awr toggle\' to toggle the addon state ON or OFF, you can also use \'/awr on\' or \'/awr off\'."
-AWR_HELP3 = "You can doublecheck if addon is turned on or off with the reason by typing \'/awr status\'."
+AWR_HELP2 = "Try typing |cffffaf24/awr toggle|r to toggle the addon state ON or OFF, you can also use |cff6fe014/awr on|r or |cffff3838/awr off|r."
+AWR_HELP3 = "You can doublecheck if addon is turned on or off with the reason by typing |cffdde813/awr status|r. Also, you can simulate a dominate mind by typing |cff26fff1/awr removeweapon|r."
 AWR_HELP4 = "Check addon version with '/awr version'."
 
 AWR_REASON_ADDONISOFF = "|cffffe83bstatus:|r addon is |cffff0000off|r because it was set as OFF by the command \'/awr toggle\'."

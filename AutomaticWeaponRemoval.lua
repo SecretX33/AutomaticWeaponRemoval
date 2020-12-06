@@ -257,23 +257,6 @@ function AWR:COMBAT_LOG_EVENT_UNFILTERED(timestamp, event, srcGUID, srcName, src
    end
 end
 
--- Called when player leaves combat
--- Used to zero all variables so the addon logic knows that, when player enters combat again, it's a new fight against a new enemy
-function AWR:PLAYER_REGEN_ENABLED()
-   if self.db.enabled then
-      if wrDebug then send("Addon variables got zeroed because player leave combat.") end
-      sentChatMessageTime  = 0
-      sentAddonMessageTime = 0
-      checkIfAddonShouldBeEnabled()
-   end
-end
-
--- Called when player enters combat
--- Used here to double check if we have what spec player is, and if not then we call getPlayerSpec to get what spec player is beforehand, yet another "just in case" code that if lady casts dominate mind addon maybe won't have time to query what class player is before the control affects the player
-function AWR:PLAYER_REGEN_DISABLED()
-   updatePlayerClassAndSpec()
-end
-
 local function regForAllEvents()
    if(AWR==nil) then send("frame is nil inside function that register for all events function, report this"); return; end
    if wrDebug then send("addon is now listening to all combatlog events.") end
@@ -310,6 +293,23 @@ local function checkIfAddonShouldBeEnabled()
       unregFromAllEvents()
       return false
    end
+end
+
+-- Called when player leaves combat
+-- Used to zero all variables so the addon logic knows that, when player enters combat again, it's a new fight against a new enemy
+function AWR:PLAYER_REGEN_ENABLED()
+   if self.db.enabled then
+      if wrDebug then send("Addon variables got zeroed because player leave combat.") end
+      sentChatMessageTime  = 0
+      sentAddonMessageTime = 0
+      checkIfAddonShouldBeEnabled()
+   end
+end
+
+-- Called when player enters combat
+-- Used here to double check if we have what spec player is, and if not then we call getPlayerSpec to get what spec player is beforehand, yet another "just in case" code that if lady casts dominate mind addon maybe won't have time to query what class player is before the control affects the player
+function AWR:PLAYER_REGEN_DISABLED()
+   updatePlayerClassAndSpec()
 end
 
 function AWR:PLAYER_DIFFICULTY_CHANGED()
