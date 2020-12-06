@@ -71,8 +71,10 @@ local DIVINE_SACRIFICE     = GetSpellLink(DIVINE_SACRIFICE_ID)
 local playerClass
 local playerSpec
 local playerClassAndSpec
-local sentChatMessageTime  = 0       -- Last time the messageToBeSentWhenControlled were sent
-local sentAddonMessageTime = 0       -- Last time the addonMessageForWeaponRemoval were sent
+local sentChatMessageTime   = 0       -- Last time the messageToBeSentWhenControlled were sent
+local sentAddonMessageTime  = 0       -- Last time the addonMessageForWeaponRemoval were sent
+local playerControlledCount = 0       -- How many times the player has been controlled by Lady
+local weaponsRemovedCount   = 0       -- How many times weapons have been removed by this addon
 
 -- Player current instance info
 local instanceName
@@ -203,7 +205,8 @@ local function getICCDifficultyIndexAsString(index)
 end ]]--
 
 -- Logic functions are under here
-local function removeWeapons()
+local function removeWeapons(isTesting)
+   if(isTesting==nil) then isTesting = false end
    updatePlayerClassAndSpecIfNeeded()
 
    if removeFor[playerClassAndSpec] then
@@ -217,20 +220,29 @@ local function removeWeapons()
          PickupInventoryItem(18)
          PutItemInBackpack()
       end
-
       if showAddonMessageForWeaponRemoval and (GetTime() > (sentAddonMessageTime + 5)) then -- GetTime comparison here is preventing sending same message two times in a row, a "just in case" check
          send(addonMessageForWeaponRemoval)
          sentAddonMessageTime = GetTime()
       end
+      if not isTesting then
+         weaponsRemovedCount = weaponsRemovedCount + 1
+         AWR.db.weaponsremovedcount = weaponsRemovedCount
+      end
    elseif wrDebug then send("class is not selected for weapon removal.") end
 end
 
-local function onDominateMindCast()
+local function onDominateMindCast(isTesting)
+   if(isTesting==nil) then isTesting = false end
+
    if sendMessageOnChatWhenControlled and (GetTime() > (sentChatMessageTime + 5)) then -- GetTime comparison here is preventing sending same message two times in a row, a "just in case" check
       say(messageToBeSentWhenControlled)
       sentChatMessageTime = GetTime()
    end
-   removeWeapons()
+   if not isTesting then
+      playerControlledCount = playerControlledCount + 1
+      AWR.db.playercontrolledcount = playerControlledCount
+   end
+   removeWeapons(isTesting)
 end
 
 local function onDominateMindFade()
@@ -381,6 +393,11 @@ local function slashCommandDebug()
    end
 end
 
+-- count, report
+local function slashCommandCount()
+   send(format(AWR_REPORT_COUNT,playerControlledCount,weaponsRemovedCount))
+end
+
 local function slashCommand(cmd)
    if(cmd~=nil) then cmd = cmd:lower() end
    if(cmd=="help" or cmd=="?" or cmd=="") then
@@ -394,8 +411,9 @@ local function slashCommand(cmd)
    elseif(cmd=="status" or cmd=="state") then slashCommandStatus()
    elseif(cmd=="version" or cmd=="ver") then slashCommandVersion()
    elseif(cmd=="spec") then slashCommandSpec()
-   elseif(cmd=="removeweapon" or cmd=="removeweapons" or cmd=="rw") then onDominateMindCast()
+   elseif(cmd=="removeweapon" or cmd=="removeweapons" or cmd=="rw") then onDominateMindCast(true)
    elseif(cmd=="debug") then slashCommandDebug()
+   elseif(cmd=="count" or cmd=="report") then slashCommandCount()
    end
 end
 -- End of slash commands function
@@ -416,6 +434,8 @@ function AWR:ADDON_LOADED(addon)
    AWRDB = AWRDB or { enabled = true }  -- DB just stores if addon is turned on or off
    self.db = AWRDB
    wrDebug = self.db.debug or wrDebug
+   playerControlledCount = self.db.playercontrolledcount or playerControlledCount
+   weaponsRemovedCount = self.db.weaponsremovedcount or weaponsRemovedCount
    SLASH_AUTOMATICWEAPONREMOVAL1 = "/awr"
    SLASH_AUTOMATICWEAPONREMOVAL2 = "/automaticweaponremoval"
    SlashCmdList.AUTOMATICWEAPONREMOVAL = function(cmd) slashCommand(cmd) end

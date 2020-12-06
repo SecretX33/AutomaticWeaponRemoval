@@ -1,10 +1,10 @@
 -- AutomaticWeaponRemoval Localization File
--- Version 1.0.5
+-- Version 1.0.6
 
 AWR_HELP1 = "This addon will automatically remove your weapons and bow when Lady Deathwhisper controls you."
 AWR_HELP2 = "Try typing |cffffaf24/awr toggle|r to toggle the addon state ON or OFF, you can also use |cff6fe014/awr on|r or |cffff3838/awr off|r."
 AWR_HELP3 = "You can doublecheck if addon is turned on or off with the reason by typing |cffdde813/awr status|r. Also, you can simulate a dominate mind by typing |cff26fff1/awr removeweapon|r."
-AWR_HELP4 = "Check addon version with '/awr version'."
+AWR_HELP4 = "See how many times you have been controlled with |cffba69f5/awr count|r. Check addon version with |cff55e6a9/awr version|r."
 
 AWR_REASON_ADDONISOFF = "|cffffe83bstatus:|r addon is |cffff0000off|r because it was set as OFF by the command \'/awr toggle\'."
 AWR_REASON_NOTINICC = "|cffffe83bstatus:|r addon is |cffff0000off|r because you are not inside ICC right now."
@@ -12,3 +12,5 @@ AWR_REASON_RAIDDIFFICULTY = "|cffffe83bstatus:|r addon is |cffff0000off|r becaus
 AWR_REASON_INSIDEICC = "|cffffe83bstatus:|r addon is |cff00ff00on|r because you are inside ICC."
 
 AWR_ADDON_STILL_LOADING = "Try again later, addon still loading..."
+
+AWR_REPORT_COUNT = "you have been controlled by Lady Deathwhisper |cffffaf24%d|r time(s) and your weapons have been removed by this addon |cffffaf24%d|r time(s)."
