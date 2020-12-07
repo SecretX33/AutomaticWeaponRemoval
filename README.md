@@ -1,8 +1,13 @@
 # AutomaticWeaponRemoval
+
+* [Download](#download)
+* [FAQ](#faq)
  
 This addon is made for World of Warcraft 3.3.5a
  
 This addon remove your weapons automatically when you are controlled by Lady Deathwhisper, and more, like removing Paladin's RF buff if you are not a tank. No in-game options, all configs are done in the Lua file.
+
+------------
 
 **Slash commands:**
 
@@ -22,12 +27,33 @@ This addon remove your weapons automatically when you are controlled by Lady Dea
 
 /awr version - Show addon version
 
-
 ## Download
 
 You can download the lastest version by [clicking here](https://github.com/SecretX33/AutomaticWeaponRemoval/releases/latest/download/AutomaticWeaponRemoval.zip). 
 
 If you want to download an earlier version of the addon, you can do it by checking the release page [here](https://github.com/SecretX33/AutomaticWeaponRemoval/releases).
+
+## FAQ
+
+**Q:** Does the addon really works, I mean, will it really unequip my weapons if Lady cast Dominate Mind on me?
+
+**A:** Yes.
+
+**Q:** Is that some kind of dark magic?
+
+**A:** No.
+
+**Q:** Can I get banned by using this addon?
+
+**A:** Read [this](https://eu.forums.blizzard.com/en/wow/t/can-i-get-banned-for-this/78719/8) if you are afraid, but tl;dr answer is *no*, addons can do only what Blizzard allows in their API, all I did was use the API in a creative way.
+
+**Q:** I have a great idea for you to change X thing on your addon, how can I contact you?
+
+**A:** That's nice to hear! Please, open an issue with the tag *suggestion* or *idea* and tell me what's on your mind.
+
+**Q:** Your addon is awesome, but I really miss an UI (User Interface), couldn't you add one?
+
+**A:** Yes and no. I am by no means a "professional add-on developer" of some sort, I did this addon for fun, and to help my guild. I don't know how to make an add-on interface, but I can research it, if you guys really want one let me know and I'll make one.
 
 ## Reporting issues
 
