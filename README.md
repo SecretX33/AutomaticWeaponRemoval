@@ -35,7 +35,7 @@ If you want to download an earlier version of the addon, you can do it by checki
 
 ## FAQ
 
-**Q:** Does the addon really works, I mean, will it really unequip my weapons if Lady cast Dominate Mind on me?
+**Q:** Does the addon really works, I mean, will it really unequip my weapons if Lady casts Dominate Mind on me?
 
 **A:** Yes.
 
