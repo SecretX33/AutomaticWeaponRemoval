@@ -137,6 +137,7 @@ local function updatePlayerSpec()
    -- the function GetUnitTalentSpec from GroupTalentsLib can return a number if the player has not yet seen that class/build, so another "just in case" code, but I'm not sure what if this number means the talent tree number (like 1 for balance, 3 for restoration) or just the spec slot (player has just two slots), I guess I'll have to shoot in the dark here. ;)
    -- I just discovered that this function can also return nil if called when player is logging in (probably because the inspect function doesn't work while logging in)
    local spec = groupTalentsLib:GetUnitTalentSpec(UnitName("player"))
+   if spec=="Feral Combat" then spec = "Feral" end  -- We will treat 'Feral Combat' as 'Feral'
 
    if spec~=nil then
       playerSpec = spec
@@ -377,7 +378,15 @@ end
 local function slashCommandSpec()
    if(playerClass==nil) then send(AWR_ADDON_STILL_LOADING); return; end
    updatePlayerClassAndSpec()
-   send("Your class is " .. upperFirstOnly(playerClass) .. (playerSpec and (" and your build is " .. upperFirstOnly(playerSpec)) or "") .. ".")
+   local spec = getPlayerSpec()
+   local class = playerClass
+
+   if class=="DEATHKNIGHT" then class = "Death Knight"
+   else class = upperFirstOnly(playerClass) end
+   if spec==nil then spec = "Unknown"
+   else spec = upperFirstOnly(spec) end
+
+   send("Your class is " .. class .. " and your build is " .. spec .. ".")
 end
 
 -- debug
