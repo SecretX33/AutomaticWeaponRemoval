@@ -60,13 +60,15 @@ local removeFor = {
 -- Don't touch anything below
 local wrDebug              = false       -- AWR debug messages
 local DOMINATE_MIND_ID     = 71289       -- Lady's Mind Control ability
-local DOMINATE_MIND        = GetSpellLink(DOMINATE_MIND_ID)
+local DOMINATE_MIND        = GetSpellInfo(DOMINATE_MIND_ID)
 local RIGHTEOUS_FURY_ID    = 25780
-local RIGHTEOUS_FURY       = GetSpellLink(RIGHTEOUS_FURY_ID)
+local RIGHTEOUS_FURY       = GetSpellInfo(RIGHTEOUS_FURY_ID)
 local DIVINE_PLEA_ID       = 54428
-local DIVINE_PLEA          = GetSpellLink(DIVINE_PLEA_ID)
+local DIVINE_PLEA          = GetSpellInfo(DIVINE_PLEA_ID)
 local DIVINE_SACRIFICE_ID  = 64205
-local DIVINE_SACRIFICE     = GetSpellLink(DIVINE_SACRIFICE_ID)
+local DIVINE_SACRIFICE     = GetSpellInfo(DIVINE_SACRIFICE_ID)
+local STARFALL_ID          = 53201
+local STARFALL             = GetSpellInfo(STARFALL_ID)
 
 local playerClass
 local playerSpec
@@ -234,8 +236,9 @@ end
 
 local function onDominateMindCast(isTesting)
    if(isTesting==nil) then isTesting = false end
+   updatePlayerClassAndSpecIfNeeded()
 
-   if sendMessageOnChatWhenControlled and (GetTime() > (sentChatMessageTime + 5)) then -- GetTime comparison here is preventing sending same message two times in a row, a "just in case" check
+   if sendMessageOnChatWhenControlled and (GetTime() > (sentChatMessageTime + 5)) and (not wrDebug or not isTesting) then -- GetTime comparison here is preventing sending same message two times in a row, a "just in case" check
       say(messageToBeSentWhenControlled)
       sentChatMessageTime = GetTime()
    end
@@ -243,7 +246,10 @@ local function onDominateMindCast(isTesting)
       playerControlledCount = playerControlledCount + 1
       AWR.db.playercontrolledcount = playerControlledCount
    end
-   removeWeapons(isTesting)
+
+   if playerClass=="DRUID" then
+      CancelUnitBuff("player", STARFALL)
+   end
 end
 
 local function onDominateMindFade()
