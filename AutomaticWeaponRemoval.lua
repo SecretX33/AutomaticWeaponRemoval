@@ -58,17 +58,309 @@ local removeFor = {
 
 
 -- Don't touch anything below
-local wrDebug              = false       -- AWR debug messages
-local DOMINATE_MIND_ID     = 71289       -- Lady's Mind Control ability
-local DOMINATE_MIND        = GetSpellInfo(DOMINATE_MIND_ID)
-local RIGHTEOUS_FURY_ID    = 25780
-local RIGHTEOUS_FURY       = GetSpellInfo(RIGHTEOUS_FURY_ID)
-local DIVINE_PLEA_ID       = 54428
-local DIVINE_PLEA          = GetSpellInfo(DIVINE_PLEA_ID)
-local DIVINE_SACRIFICE_ID  = 64205
-local DIVINE_SACRIFICE     = GetSpellInfo(DIVINE_SACRIFICE_ID)
-local STARFALL_ID          = 53201
-local STARFALL             = GetSpellInfo(STARFALL_ID)
+local wrDebug          = false       -- AWR debug messages
+local DOMINATE_MIND_ID = 71289       -- Lady's Mind Control ability
+--local DOMINATE_MIND    = GetSpellInfo(DOMINATE_MIND_ID)
+-- General spells
+local HEROISM_ID       = UnitFactionGroup("player") == "Horde" and 2825 or 32182   -- Horde = "Bloodlust" / Alliance = "Heroism"
+local HEROISM          = GetSpellInfo(HEROISM_ID)
+local DEMONIC_PACT_ID  = 48090
+local DEMONIC_PACT     = GetSpellInfo(DEMONIC_PACT_ID)
+-- Trinket buffs
+local trinket_ids = {
+   ["SUNDIAL_OF_EXILED"]      = 60064,
+   ["MIRROR_OF_TRUTH"]        = 60065,
+   ["MARK_OF_SUPREMACY"]      = 67695,
+   ["TALISMAN_RESURGENCE"]    = 67684,
+   ["DV_N_STR"]               = 67708,
+   ["DV_N_AGI"]               = 67703,
+   ["DV_HC_STR"]              = 67773,
+   ["DV_HC_AGI"]              = 67772,
+   ["HERKUML_WAR_TOKEN"]      = 71396,  -- Frost trinket, has haste and stack up to 20 times attack power
+   ["MAGHIA_MISGUIDED_QUILL"] = 71579,  -- Frost spell trinket 716 spell / 20 sec
+   ["SINDRA_N"]               = 71635,
+   ["SINDRA_HC"]              = 71638,
+   ["DISLODGED_N"]            = 71601,
+   ["DISLODGED_HC"]           = 71644,
+   ["PHYLACTERY_N"]           = 71605,
+   ["PHYLACTERY_HC"]          = 71636,
+   ["CHARRED_N"]              = 75466,
+   ["CHARRED_HC"]             = 75473,
+   ["SHARPENED_N"]            = 75458,
+   ["SHARPENED_HC"]           = 75456,
+   ["DBW_N_STR"]              = 71484,
+   ["DBW_N_HASTE"]            = 71492,
+   ["DBW_N_CRIT"]             = 71491,
+   ["DBW_N_AGI"]              = 71485,
+   ["DBW_N_ATKPOWER"]         = 71486,
+   ["DBW_N_ARP"]              = 71487,
+   ["DBW_HC_STR"]             = 71561,
+   ["DBW_HC_HASTE"]           = 71560,
+   ["DBW_HC_CRIT"]            = 71559,
+   ["DBW_HC_AGI"]             = 71556,
+   ["DBW_HC_ATKPOWER"]        = 71558,
+   ["DBW_HC_ARP"]             = 71557,
+   ["WHISPERING_N"]           = 71401,
+   ["WHISPERING_HC"]          = 71541,
+   ["MURADIN_N"]              = 71570,
+   ["MURADIN_HC"]             = 71573,
+}
+local trinket_before = {
+   ["SUNDIAL_OF_EXILED"]      = GetSpellInfo(trinket_ids["SUNDIAL_OF_EXILED"]),
+   ["MIRROR_OF_TRUTH"]        = GetSpellInfo(trinket_ids["MIRROR_OF_TRUTH"]),
+   ["MARK_OF_SUPREMACY"]      = GetSpellInfo(trinket_ids["MARK_OF_SUPREMACY"]),
+   ["TALISMAN_RESURGENCE"]    = GetSpellInfo(trinket_ids["TALISMAN_RESURGENCE"]),
+   ["DV_N_STR"]               = GetSpellInfo(trinket_ids["DV_N_STR"]),
+   ["DV_N_AGI"]               = GetSpellInfo(trinket_ids["DV_N_AGI"]),
+   ["DV_HC_STR"]              = GetSpellInfo(trinket_ids["DV_HC_STR"]),
+   ["DV_HC_AGI"]              = GetSpellInfo(trinket_ids["DV_HC_AGI"]),
+   ["HERKUML_WAR_TOKEN"]      = GetSpellInfo(trinket_ids["HERKUML_WAR_TOKEN"]),
+   ["MAGHIA_MISGUIDED_QUILL"] = GetSpellInfo(trinket_ids["MAGHIA_MISGUIDED_QUILL"]),
+   ["SINDRA_N"]               = GetSpellInfo(trinket_ids["SINDRA_N"]),
+   ["SINDRA_HC"]              = GetSpellInfo(trinket_ids["SINDRA_HC"]),
+   ["DISLODGED_N"]            = GetSpellInfo(trinket_ids["DISLODGED_N"]),
+   ["DISLODGED_HC"]           = GetSpellInfo(trinket_ids["DISLODGED_HC"]),
+   ["PHYLACTERY_N"]           = GetSpellInfo(trinket_ids["PHYLACTERY_N"]),
+   ["PHYLACTERY_HC"]          = GetSpellInfo(trinket_ids["PHYLACTERY_HC"]),
+   ["CHARRED_N"]              = GetSpellInfo(trinket_ids["CHARRED_N"]),
+   ["CHARRED_HC"]             = GetSpellInfo(trinket_ids["CHARRED_HC"]),
+   ["SHARPENED_N"]            = GetSpellInfo(trinket_ids["SHARPENED_N"]),
+   ["SHARPENED_HC"]           = GetSpellInfo(trinket_ids["SHARPENED_HC"]),
+   ["DBW_N_STR"]              = GetSpellInfo(trinket_ids["DBW_N_STR"]),
+   ["DBW_N_HASTE"]            = GetSpellInfo(trinket_ids["DBW_N_HASTE"]),
+   ["DBW_N_CRIT"]             = GetSpellInfo(trinket_ids["DBW_N_CRIT"]),
+   ["DBW_N_AGI"]              = GetSpellInfo(trinket_ids["DBW_N_AGI"]),
+   ["DBW_N_ATKPOWER"]         = GetSpellInfo(trinket_ids["DBW_N_ATKPOWER"]),
+   ["DBW_N_ARP"]              = GetSpellInfo(trinket_ids["DBW_N_ARP"]),
+   ["DBW_HC_STR"]             = GetSpellInfo(trinket_ids["DBW_HC_STR"]),
+   ["DBW_HC_HASTE"]           = GetSpellInfo(trinket_ids["DBW_HC_HASTE"]),
+   ["DBW_HC_CRIT"]            = GetSpellInfo(trinket_ids["DBW_HC_CRIT"]),
+   ["DBW_HC_AGI"]             = GetSpellInfo(trinket_ids["DBW_HC_AGI"]),
+   ["DBW_HC_ATKPOWER"]        = GetSpellInfo(trinket_ids["DBW_HC_ATKPOWER"]),
+   ["DBW_HC_ARP"]             = GetSpellInfo(trinket_ids["DBW_HC_ARP"]),
+   ["WHISPERING_N"]           = GetSpellInfo(trinket_ids["WHISPERING_N"]),
+   ["WHISPERING_HC"]          = GetSpellInfo(trinket_ids["WHISPERING_HC"]),
+   ["MURADIN_N"]              = GetSpellInfo(trinket_ids["MURADIN_N"]),
+   ["MURADIN_HC"]             = GetSpellInfo(trinket_ids["MURADIN_HC"]),
+}
+-- Weapon enchant buffs
+local weapon_enchant_ids = {
+   ["BLACK_MAGIC"] = 59626,
+}
+local weapon_enchant_before = {
+   ["BLACK_MAGIC"] = GetSpellInfo(weapon_enchant_ids["BLACK_MAGIC"]),
+}
+-- Item buffs
+local item_ids = {
+   ["CHAOS_BANE"]         = 73422,     -- Shadowmourne Proc Chaos Bane: 270 strength for 10 seconds
+   ["RING_ICC_MELEE"]     = 72412,
+   ["RING_ICC_SPELL"]     = 72416,
+   ["RING_ICC_HEALER"]    = 72418,
+   ["GLOVES_ENGINNER"]    = 54758,
+   ["CLOAK_TAILOR_SPELL"] = 55637,
+   ["CLOAK_TAILOR_MELEE"] = 55775,
+}
+local item_before = {
+   ["CHAOS_BANE"]         = GetSpellInfo(item_ids["CHAOS_BANE"]),
+   ["RING_ICC_MELEE"]     = GetSpellInfo(item_ids["RING_ICC_MELEE"]),
+   ["RING_ICC_SPELL"]     = GetSpellInfo(item_ids["RING_ICC_SPELL"]),
+   ["RING_ICC_HEALER"]    = GetSpellInfo(item_ids["RING_ICC_HEALER"]),
+   ["GLOVES_ENGINNER"]    = GetSpellInfo(item_ids["GLOVES_ENGINNER"]),
+   ["CLOAK_TAILOR_SPELL"] = GetSpellInfo(item_ids["CLOAK_TAILOR_SPELL"]),
+   ["CLOAK_TAILOR_MELEE"] = GetSpellInfo(item_ids["CLOAK_TAILOR_MELEE"]),
+}
+-- Hunter spells
+local hunter_ids = {
+   ["STINGER"]         = 71007,  -- T10 buff: 20% attack power
+   ["BESTIAL_WRATH"]   = 19574,
+   ["CULLING_HEARD"]   = 70893,
+   ["FURIOUS_HOWL"]    = 64495,
+   ["KILL_COMMAND"]    = 34027,
+   ["EXPOSE_WEAKNESS"] = 70728,
+}
+local hunter_before = {
+   ["STINGER"]         = GetSpellInfo(hunter_ids["STINGER"]),
+   ["BESTIAL_WRATH"]   = GetSpellInfo(hunter_ids["BESTIAL_WRATH"]),
+   ["CULLING_HEARD"]   = GetSpellInfo(hunter_ids["CULLING_HEARD"]),
+   ["FURIOUS_HOWL"]    = GetSpellInfo(hunter_ids["FURIOUS_HOWL"]),
+   ["KILL_COMMAND"]    = GetSpellInfo(hunter_ids["KILL_COMMAND"]),
+   ["EXPOSE_WEAKNESS"] = GetSpellInfo(hunter_ids["EXPOSE_WEAKNESS"]),
+}
+-- Death Knight spells
+local dk_ids = {
+   ["ADVANTAGE"]        = 70657,  -- T10 Buff: 3% damage
+   ["FALLEN_CRUSADER"]  = 53365,
+   ["ANTIMAGIC_SHELL"]  = 53766,
+   ["KILLING_MACHINE"]  = 51123,
+   ["DEATHCHILL"]       = 49796,
+   ["RIME"]             = 59052,
+   ["ACCLIMATION"]      = 49200,
+   ["DESOLATION"]       = 66803,
+   ["VIRULENCE_SIGIL"]  = 67383,
+   ["HANGED_MAN_SIGIL"] = 71227,
+}
+local dk_before = {
+   ["ADVANTAGE"]        = GetSpellInfo(dk_ids["ADVANTAGE"]),
+   ["FALLEN_CRUSADER"]  = GetSpellInfo(dk_ids["FALLEN_CRUSADER"]),
+   ["ANTIMAGIC_SHELL"]  = GetSpellInfo(dk_ids["ANTIMAGIC_SHELL"]),
+   ["KILLING_MACHINE"]  = GetSpellInfo(dk_ids["KILLING_MACHINE"]),
+   ["DEATHCHILL"]       = GetSpellInfo(dk_ids["DEATHCHILL"]),
+   ["RIME"]             = GetSpellInfo(dk_ids["RIME"]),
+   ["ACCLIMATION"]      = GetSpellInfo(dk_ids["ACCLIMATION"]),
+   ["DESOLATION"]       = GetSpellInfo(dk_ids["DESOLATION"]),
+   ["VIRULENCE_SIGIL"]  = GetSpellInfo(dk_ids["VIRULENCE_SIGIL"]),
+   ["HANGED_MAN_SIGIL"] = GetSpellInfo(dk_ids["HANGED_MAN_SIGIL"]),
+}
+-- Paladin spells
+local paladin_ids = {
+   ["ART_OF_WAR"]       = 59578,
+   ["AVENGING_WRATH"]   = 31884,
+   ["RIGHTEOUS_FURY"]   = 25780,
+   ["VENGEANCE"]        = 20053,
+   ["DIVINE_PLEA"]      = 54428,
+   ["DIVINE_SACRIFICE"] = 64205,
+   ["VALIANCE_LIBRAM"]  = 67371,
+   ["THREE_TRUTHS_LIBRAM"]  = 67371,
+}
+-- do NOT loop here, the cancel for these spells are situational
+local paladin_before = {
+   ["ART_OF_WAR"]          = GetSpellInfo(paladin_ids["ART_OF_WAR"]),
+   ["AVENGING_WRATH"]      = GetSpellInfo(paladin_ids["AVENGING_WRATH"]),
+   ["VENGEANCE"]           = GetSpellInfo(paladin_ids["VENGEANCE"]),
+   ["VALIANCE_LIBRAM"]     = GetSpellInfo(paladin_ids["VALIANCE_LIBRAM"]),
+   ["THREE_TRUTHS_LIBRAM"] = GetSpellInfo(paladin_ids["THREE_TRUTHS_LIBRAM"]),
+}
+-- do NOT loop here, the cancel for these spells are situational
+local paladin_after = {
+   ["RIGHTEOUS_FURY"]   = GetSpellInfo(paladin_ids["RIGHTEOUS_FURY"]),
+   ["DIVINE_PLEA"]      = GetSpellInfo(paladin_ids["DIVINE_PLEA"]),
+   ["DIVINE_SACRIFICE"] = GetSpellInfo(paladin_ids["DIVINE_SACRIFICE"]),
+}
+-- Warrior spells
+local warrior_ids = {
+   ["BLOOD_DRINKER"]    = 70855,    -- Warrior T10 DPS proc: 16% attack power
+   ["RECKLESSNESS"]     = 1719,
+   ["DEATH_WISH"]       = 12292,
+   ["SWORD_AND_BOARD"]  = 50227,
+}
+local warrior_before = {
+   ["BLOOD_DRINKER"]    = GetSpellInfo(warrior_ids["BLOOD_DRINKER"]),
+   ["RECKLESSNESS"]     = GetSpellInfo(warrior_ids["RECKLESSNESS"]),
+   ["DEATH_WISH"]       = GetSpellInfo(warrior_ids["DEATH_WISH"]),
+   ["SWORD_AND_BOARD"]  = GetSpellInfo(warrior_ids["SWORD_AND_BOARD"]),
+}
+-- Druid spells
+local druid_ids = {
+   ["NATURE_GRACE"]       = 16886,
+   ["SOLAR_ECLIPSE"]      = 48517,
+   ["LUNAR_ECLIPSE"]      = 48518,
+   ["STARFALL"]           = 53201,
+   ["OMEN_OF_DOOM"]       = 70721,
+   ["BERSERK"]            = 50334,
+   ["LUNAR_ECLIPSE_IDOL"] = 71177,
+}
+local druid_before = {
+   ["NATURE_GRACE"]       = GetSpellInfo(druid_ids["NATURE_GRACE"]),
+   ["SOLAR_ECLIPSE"]      = GetSpellInfo(druid_ids["SOLAR_ECLIPSE"]),
+   ["LUNAR_ECLIPSE"]      = GetSpellInfo(druid_ids["LUNAR_ECLIPSE"]),
+   ["STARFALL"]           = GetSpellInfo(druid_ids["STARFALL"]),
+   ["OMEN_OF_DOOM"]       = GetSpellInfo(druid_ids["OMEN_OF_DOOM"]),
+   ["BERSERK"]            = GetSpellInfo(druid_ids["BERSERK"]),
+   ["LUNAR_ECLIPSE_IDOL"] = GetSpellInfo(druid_ids["LUNAR_ECLIPSE_IDOL"]),
+}
+-- Shaman spells
+local shaman_ids = {
+   ["ELEMENTAL_DEVASTATION"] = 29180,
+   ["IMPROVED_FIRE_NOVA"]    = 16544,
+   ["ELEMENTAL_MASTERY"]     = 16166,
+   ["ELEMENTAL_RAGE"]        = 70829,    -- T10 buff when Enhancement casts Shamanistic Rage
+   ["FLURRY"]                = 16280,
+   ["MAELSTROM_WEAPON"]      = 51532,    -- Enhancement talent to insta-cast a heal or Lightning Bolt or Chain Lightning
+   ["TIDAL_FORCE"]           = 55198,
+   ["NATURE_SWIFTNESS"]      = 16188,
+   ["TIDAL_WAVES"]           = 51562,
+   ["CALMING_TIDES_TOTEM"]   = 67388,
+   ["FURIOUS_TOTEM"]         = 71199,
+   ["QUAKING_EARTH_TOTEM"]   = 67391,
+}
+local shaman_before = {
+   ["ELEMENTAL_DEVASTATION"] = GetSpellInfo(shaman_ids["ELEMENTAL_DEVASTATION"]),
+   ["IMPROVED_FIRE_NOVA"]    = GetSpellInfo(shaman_ids["IMPROVED_FIRE_NOVA"]),
+   ["ELEMENTAL_MASTERY"]     = GetSpellInfo(shaman_ids["ELEMENTAL_MASTERY"]),
+   ["ELEMENTAL_RAGE"]        = GetSpellInfo(shaman_ids["ELEMENTAL_RAGE"]),
+   ["FLURRY"]                = GetSpellInfo(shaman_ids["FLURRY"]),
+   ["MAELSTROM_WEAPON"]      = GetSpellInfo(shaman_ids["MAELSTROM_WEAPON"]),
+   ["TIDAL_FORCE"]           = GetSpellInfo(shaman_ids["TIDAL_FORCE"]),
+   ["NATURE_SWIFTNESS"]      = GetSpellInfo(shaman_ids["NATURE_SWIFTNESS"]),
+   ["TIDAL_WAVES"]           = GetSpellInfo(shaman_ids["TIDAL_WAVES"]),
+   ["CALMING_TIDES_TOTEM"]   = GetSpellInfo(shaman_ids["CALMING_TIDES_TOTEM"]),
+   ["FURIOUS_TOTEM"]         = GetSpellInfo(shaman_ids["FURIOUS_TOTEM"]),
+   ["QUAKING_EARTH_TOTEM"]   = GetSpellInfo(shaman_ids["QUAKING_EARTH_TOTEM"])
+}
+local priest_ids = {
+   ["SHADOWY_INSIGHT"]     = 61792,
+   ["SHADOW_WEAVING"]      = 15258,
+   ["IMPROVED_SPIRIT_TAP"] = 59000,
+}
+local priest_before = {
+   ["SHADOWY_INSIGHT"]     = GetSpellInfo(priest_ids["SHADOWY_INSIGHT"]),
+   ["SHADOW_WEAVING"]      = GetSpellInfo(priest_ids["SHADOW_WEAVING"]),
+   ["IMPROVED_SPIRIT_TAP"] = GetSpellInfo(priest_ids["IMPROVED_SPIRIT_TAP"]),
+}
+-- Mage spells
+local mage_ids = {
+   ["MAGE_ARMOR"]          = 43024,
+   ["QUAD_CORE"]           = 70747,  -- T10 Buff when mage casts Mirror Image
+   ["PRESENCE_OF_MIND"]    = 12043,
+   ["ARCANE_POWER"]        = 12042,
+   ["INCANTER_ABSORPTION"] = 44394,
+   ["MISSILE_BARRAGE"]     = 44401,
+   ["ICY_VEINS"]           = 12472,
+   ["COMBUSTION"]          = 28682,
+   ["HOT_STREAK"]          = 48108,
+   ["FINGERS_OF_FROST"]    = 44544,
+   ["BRAIN_FREEZE"]        = 57761,
+}
+local mage_before = {
+   ["MAGE_ARMOR"]          = GetSpellInfo(mage_ids["MAGE_ARMOR"]),
+   ["QUAD_CORE"]           = GetSpellInfo(mage_ids["QUAD_CORE"]),
+   ["PRESENCE_OF_MIND"]    = GetSpellInfo(mage_ids["PRESENCE_OF_MIND"]),
+   ["ARCANE_POWER"]        = GetSpellInfo(mage_ids["ARCANE_POWER"]),
+   ["INCANTER_ABSORPTION"] = GetSpellInfo(mage_ids["INCANTER_ABSORPTION"]),
+   ["MISSILE_BARRAGE"]     = GetSpellInfo(mage_ids["MISSILE_BARRAGE"]),
+   ["ICY_VEINS"]           = GetSpellInfo(mage_ids["ICY_VEINS"]),
+   ["COMBUSTION"]          = GetSpellInfo(mage_ids["COMBUSTION"]),
+   ["HOT_STREAK"]          = GetSpellInfo(mage_ids["HOT_STREAK"]),
+   ["FINGERS_OF_FROST"]    = GetSpellInfo(mage_ids["FINGERS_OF_FROST"]),
+   ["BRAIN_FREEZE"]        = GetSpellInfo(mage_ids["BRAIN_FREEZE"]),
+}
+-- Warlock spells
+local warlock_ids = {
+   --["METAMORPHOSIS"] = 47241, -- This is not possible because Metamorphosis is considered a shapeshift, like druid forms and so it's a protected API
+   ["IMMOLATION_AURA"] = 50589,
+   ["DEVIOUS_MINDS"]   = 70840,  -- T10 buff: 10% damage
+   ["SHADOW_TRANCE"]   = 17941,  -- Insta Shadow Bolt
+   ["ERADICATION"]     = 64371,
+   ["LIFE_TAP"]        = 63321,
+   ["MOLTEN_CORE"]     = 71165,
+   ["DECIMATION"]      = 63167,
+   ["BACKDRAFT"]       = 54277,
+}
+local warlock_before = {
+   --["METAMORPHOSIS"] = GetSpellInfo(warlock_ids["METAMORPHOSIS"]),
+   ["IMMOLATION_AURA"] = GetSpellInfo(warlock_ids["IMMOLATION_AURA"]),
+   ["DEVIOUS_MINDS"]   = GetSpellInfo(warlock_ids["DEVIOUS_MINDS"]),
+   ["SHADOW_TRANCE"]   = GetSpellInfo(warlock_ids["SHADOW_TRANCE"]),
+   ["ERADICATION"]     = GetSpellInfo(warlock_ids["ERADICATION"]),
+   ["LIFE_TAP"]        = GetSpellInfo(warlock_ids["LIFE_TAP"]),
+   ["MOLTEN_CORE"]     = GetSpellInfo(warlock_ids["MOLTEN_CORE"]),
+   ["DECIMATION"]      = GetSpellInfo(warlock_ids["DECIMATION"]),
+   ["BACKDRAFT"]       = GetSpellInfo(warlock_ids["BACKDRAFT"]),
+}
+
+local dpsPhysicalClasses = {"HUNTER", "DEATHKNIGHT", "PALADIN_Protection", "PALADIN_Retribution", "WARRIOR", "DRUID_Feral", "ROGUE", "SHAMAN_Enhancement"}
+local dpsSpellClasses    = {"DRUID_Balance","SHAMAN_Elemental","PRIEST_Shadow","MAGE","WARLOCK"}
+local healerClasses      = {"PALADIN_Holy","DRUID_Restoration","SHAMAN_Restoration","PRIEST_Discipline","PRIEST_Holy"}
 
 local playerClass
 local playerSpec
@@ -114,6 +406,18 @@ local function upperFirstOnly(str)
    return upperFirst(str:lower())
 end
 
+local function doesElementContainsAnyValueFromTable(table, element)
+   if table==nil then send("table came nil inside function to check if table contain an element, report this");return; end
+   if element==nil then send("element came nil inside function to check if table contain an element, report this");return; end
+
+   -- If any value from the table is contained inside the element then return true, aka the table have a value that match fits inside the element
+   for _, value in pairs(table) do
+      if string.match(element, value) then
+         return true
+      end
+   end
+   return false
+end
 
 local function isAddonEnabledForPlayerClass()
    if(playerClass==nil) then send("playerClass came null inside function to check if addon should be enabled for class, report this"); return; end
@@ -166,6 +470,33 @@ local function updatePlayerClassAndSpecIfNeeded()
    if playerClassAndSpec==nil then updatePlayerClassAndSpec() end
 end
 
+local function isPlayerDPSPhysical()
+   updatePlayerClassAndSpecIfNeeded()
+   if playerClassAndSpec==nil then send("playerClassAndSpec came nil inside function to check if player is dps physical, report this.");return false; end
+
+   local isPhysical = doesElementContainsAnyValueFromTable(dpsPhysicalClasses, playerClassAndSpec)
+   --if wrDebug then send("player class is dps physical? " .. tostring(isPhysical)) end
+   return isPhysical
+end
+
+local function isPlayerDPSSpell()
+   updatePlayerClassAndSpecIfNeeded()
+   if playerClassAndSpec==nil then send("playerClassAndSpec came nil inside function to check if player is dps spell, report this.");return false; end
+
+   local isSpell = doesElementContainsAnyValueFromTable(dpsSpellClasses, playerClassAndSpec)
+   --if wrDebug then send("player class is dps spell? " .. tostring(isSpell)) end
+   return isSpell
+end
+
+local function isPlayerHealer()
+   updatePlayerClassAndSpecIfNeeded()
+   if playerClassAndSpec==nil then send("playerClassAndSpec came nil inside function to check if player is healer, report this.");return false; end
+
+   local isHealer = doesElementContainsAnyValueFromTable(healerClasses, playerClassAndSpec)
+   --if wrDebug then send("player class is healer? " .. tostring(isHealer)) end
+   return isHealer
+end
+
 -- Not using these functions yet
 --[[local function getSpellName(spellID)
    if spellID==nil then return "" end
@@ -207,6 +538,14 @@ local function getICCDifficultyIndexAsString(index)
    end
 end ]]--
 
+local function cancelAllBuffsFromPlayerInTable(buffTable)
+   if buffTable ==nil then send("buffTable came nil inside function to remove all buffs inside table from player, report this.");return false; end
+
+   for _, value in pairs(buffTable) do
+      CancelUnitBuff("player", value)
+   end
+end
+
 -- Logic functions are under here
 local function removeWeapons(isTesting)
    if(isTesting==nil) then isTesting = false end
@@ -246,9 +585,43 @@ local function onDominateMindCast(isTesting)
       playerControlledCount = playerControlledCount + 1
       AWR.db.playercontrolledcount = playerControlledCount
    end
+   removeWeapons(isTesting)
 
-   if playerClass=="DRUID" then
-      CancelUnitBuff("player", STARFALL)
+   if not isTesting or wrDebug then
+      -- Canceling player buffs
+      -- Generic buffs
+      if not isPlayerDPSPhysical() then
+         CancelUnitBuff("player", HEROISM)
+      end
+      if isPlayerDPSSpell() then
+         CancelUnitBuff("player", DEMONIC_PACT)
+      end
+      -- Trinket buffs
+      cancelAllBuffsFromPlayerInTable(trinket_before)
+      -- Weapon enchant buffs
+      cancelAllBuffsFromPlayerInTable(weapon_enchant_before)
+      -- Item buffs
+      cancelAllBuffsFromPlayerInTable(item_before)
+      -- Class buffs
+      if playerClass=="HUNTER" then
+         cancelAllBuffsFromPlayerInTable(hunter_before)
+      elseif playerClass=="DEATHKNIGHT" then
+         cancelAllBuffsFromPlayerInTable(dk_before)
+      elseif playerClass=="PALADIN" then
+         cancelAllBuffsFromPlayerInTable(paladin_before)
+      elseif playerClass=="WARRIOR" then
+         cancelAllBuffsFromPlayerInTable(warrior_before)
+      elseif playerClass=="DRUID" then
+         cancelAllBuffsFromPlayerInTable(druid_before)
+      elseif playerClass=="SHAMAN" then
+         cancelAllBuffsFromPlayerInTable(shaman_before)
+      elseif playerClass=="PRIEST" then
+         cancelAllBuffsFromPlayerInTable(priest_before)
+      elseif playerClass=="MAGE" then
+         cancelAllBuffsFromPlayerInTable(mage_before)
+      elseif playerClass=="WARLOCK" then
+         cancelAllBuffsFromPlayerInTable(warlock_before)
+      end
    end
 end
 
@@ -256,9 +629,9 @@ local function onDominateMindFade()
    updatePlayerClassAndSpecIfNeeded()
 
    if playerClass=="PALADIN" then
-      if getPlayerSpec()~="Protection" and removePaladinRFAfterControlsEnd then CancelUnitBuff("player", RIGHTEOUS_FURY) end
-      if getPlayerSpec()=="Holy" and removeDivinePleaAfterControlsEndIfHoly then CancelUnitBuff("player", DIVINE_PLEA) end
-      CancelUnitBuff("player", DIVINE_SACRIFICE)
+      if getPlayerSpec()~="Protection" and removePaladinRFAfterControlsEnd then CancelUnitBuff("player", paladin_after["RIGHTEOUS_FURY"]) end
+      if getPlayerSpec()=="Holy" and removeDivinePleaAfterControlsEndIfHoly then CancelUnitBuff("player", paladin_after["DIVINE_PLEA"]) end
+      CancelUnitBuff("player", paladin_after["DIVINE_SACRIFICE"])
    end
 end
 
@@ -454,6 +827,7 @@ function AWR:ADDON_LOADED(addon)
    SLASH_AUTOMATICWEAPONREMOVAL1 = "/awr"
    SLASH_AUTOMATICWEAPONREMOVAL2 = "/automaticweaponremoval"
    SlashCmdList.AUTOMATICWEAPONREMOVAL = function(cmd) slashCommand(cmd) end
+   if wrDebug then send("remember that debug mode is " .. "|cff00ff00on|r") end
 
    self:RegisterEvent("PLAYER_ENTERING_WORLD")
    self:UnregisterEvent("ADDON_LOADED")
