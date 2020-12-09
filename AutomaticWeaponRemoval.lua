@@ -70,6 +70,7 @@ local DEMONIC_PACT     = GetSpellInfo(DEMONIC_PACT_ID)
 local trinket_ids = {
    ["SUNDIAL_OF_EXILED"]      = 60064,
    ["MIRROR_OF_TRUTH"]        = 60065,
+   ["NEEDLE_SCORPION"]        = 71403,
    ["MARK_OF_SUPREMACY"]      = 67695,
    ["TALISMAN_RESURGENCE"]    = 67684,
    ["DV_N_STR"]               = 67708,
@@ -108,6 +109,7 @@ local trinket_ids = {
 local trinket_before = {
    ["SUNDIAL_OF_EXILED"]      = GetSpellInfo(trinket_ids["SUNDIAL_OF_EXILED"]),
    ["MIRROR_OF_TRUTH"]        = GetSpellInfo(trinket_ids["MIRROR_OF_TRUTH"]),
+   ["NEEDLE_SCORPION"]        = GetSpellInfo(trinket_ids["NEEDLE_SCORPION"]),
    ["MARK_OF_SUPREMACY"]      = GetSpellInfo(trinket_ids["MARK_OF_SUPREMACY"]),
    ["TALISMAN_RESURGENCE"]    = GetSpellInfo(trinket_ids["TALISMAN_RESURGENCE"]),
    ["DV_N_STR"]               = GetSpellInfo(trinket_ids["DV_N_STR"]),
@@ -146,9 +148,11 @@ local trinket_before = {
 -- Weapon enchant buffs
 local weapon_enchant_ids = {
    ["BLACK_MAGIC"] = 59626,
+   ["BERSERK"]     = 59620,
 }
 local weapon_enchant_before = {
    ["BLACK_MAGIC"] = GetSpellInfo(weapon_enchant_ids["BLACK_MAGIC"]),
+   ["BERSERK"]     = GetSpellInfo(weapon_enchant_ids["BERSERK"]),
 }
 -- Item buffs
 local item_ids = {
@@ -171,20 +175,20 @@ local item_before = {
 }
 -- Hunter spells
 local hunter_ids = {
-   ["STINGER"]         = 71007,  -- T10 buff: 20% attack power
-   ["BESTIAL_WRATH"]   = 19574,
-   ["CULLING_HEARD"]   = 70893,
-   ["FURIOUS_HOWL"]    = 64495,
-   ["KILL_COMMAND"]    = 34027,
-   ["EXPOSE_WEAKNESS"] = 70728,
+   ["EXPLOIT_WEAKNESS"] = 70728,  -- 2T10 buff: 15% damage for 10 sec for both hunter and pet
+   ["STINGER"]          = 71007,  -- 4T10 buff: 20% attack power for 10 sec
+   ["BESTIAL_WRATH"]    = 19574,
+   ["CULLING_HEARD"]    = 70893,
+   ["FURIOUS_HOWL"]     = 64495,
+   ["KILL_COMMAND"]     = 34027,
 }
 local hunter_before = {
-   ["STINGER"]         = GetSpellInfo(hunter_ids["STINGER"]),
-   ["BESTIAL_WRATH"]   = GetSpellInfo(hunter_ids["BESTIAL_WRATH"]),
-   ["CULLING_HEARD"]   = GetSpellInfo(hunter_ids["CULLING_HEARD"]),
-   ["FURIOUS_HOWL"]    = GetSpellInfo(hunter_ids["FURIOUS_HOWL"]),
-   ["KILL_COMMAND"]    = GetSpellInfo(hunter_ids["KILL_COMMAND"]),
-   ["EXPOSE_WEAKNESS"] = GetSpellInfo(hunter_ids["EXPOSE_WEAKNESS"]),
+   ["EXPLOIT_WEAKNESS"] = GetSpellInfo(hunter_ids["EXPLOIT_WEAKNESS"]),
+   ["STINGER"]          = GetSpellInfo(hunter_ids["STINGER"]),
+   ["BESTIAL_WRATH"]    = GetSpellInfo(hunter_ids["BESTIAL_WRATH"]),
+   ["CULLING_HEARD"]    = GetSpellInfo(hunter_ids["CULLING_HEARD"]),
+   ["FURIOUS_HOWL"]     = GetSpellInfo(hunter_ids["FURIOUS_HOWL"]),
+   ["KILL_COMMAND"]     = GetSpellInfo(hunter_ids["KILL_COMMAND"]),
 }
 -- Death Knight spells
 local dk_ids = {
@@ -213,14 +217,14 @@ local dk_before = {
 }
 -- Paladin spells
 local paladin_ids = {
-   ["ART_OF_WAR"]       = 59578,
-   ["AVENGING_WRATH"]   = 31884,
-   ["RIGHTEOUS_FURY"]   = 25780,
-   ["VENGEANCE"]        = 20053,
-   ["DIVINE_PLEA"]      = 54428,
-   ["DIVINE_SACRIFICE"] = 64205,
-   ["VALIANCE_LIBRAM"]  = 67371,
-   ["THREE_TRUTHS_LIBRAM"]  = 67371,
+   ["ART_OF_WAR"]          = 59578,
+   ["AVENGING_WRATH"]      = 31884,
+   ["RIGHTEOUS_FURY"]      = 25780,
+   ["VENGEANCE"]           = 20053,
+   ["DIVINE_PLEA"]         = 54428,
+   ["DIVINE_SACRIFICE"]    = 64205,
+   ["VALIANCE_LIBRAM"]     = 67371,
+   ["THREE_TRUTHS_LIBRAM"] = 67371,
 }
 -- do NOT loop here, the cancel for these spells are situational
 local paladin_before = {
@@ -240,12 +244,14 @@ local paladin_after = {
 local warrior_ids = {
    ["BLOOD_DRINKER"]    = 70855,    -- Warrior T10 DPS proc: 16% attack power
    ["RECKLESSNESS"]     = 1719,
+   ["BERSERKER_RAGE"]   = 18499,
    ["DEATH_WISH"]       = 12292,
    ["SWORD_AND_BOARD"]  = 50227,
 }
 local warrior_before = {
    ["BLOOD_DRINKER"]    = GetSpellInfo(warrior_ids["BLOOD_DRINKER"]),
    ["RECKLESSNESS"]     = GetSpellInfo(warrior_ids["RECKLESSNESS"]),
+   ["BERSERKER_RAGE"]   = GetSpellInfo(warrior_ids["BERSERKER_RAGE"]),
    ["DEATH_WISH"]       = GetSpellInfo(warrior_ids["DEATH_WISH"]),
    ["SWORD_AND_BOARD"]  = GetSpellInfo(warrior_ids["SWORD_AND_BOARD"]),
 }
@@ -273,9 +279,10 @@ local shaman_ids = {
    ["ELEMENTAL_DEVASTATION"] = 29180,
    ["IMPROVED_FIRE_NOVA"]    = 16544,
    ["ELEMENTAL_MASTERY"]     = 16166,
-   ["ELEMENTAL_RAGE"]        = 70829,    -- T10 buff when Enhancement casts Shamanistic Rage
+   ["ELEMENTAL_RAGE"]        = 70829,    -- 2T10 buff when Enhancement casts Shamanistic Rage: 12% damage / 15 seg
+   ["MAELSTROM_POWER"]       = 70831,    -- 4T10 buff when Enhancement gains 5 stacks of Maelstrom Weapon: 20% attack power / 10 seg
    ["FLURRY"]                = 16280,
-   ["MAELSTROM_WEAPON"]      = 51532,    -- Enhancement talent to insta-cast a heal or Lightning Bolt or Chain Lightning
+   ["MAELSTROM_WEAPON"]      = 51532,    -- Enhancement talent to insta-cast a healing spell or Lightning Bolt or Chain Lightning
    ["TIDAL_FORCE"]           = 55198,
    ["NATURE_SWIFTNESS"]      = 16188,
    ["TIDAL_WAVES"]           = 51562,
@@ -288,6 +295,7 @@ local shaman_before = {
    ["IMPROVED_FIRE_NOVA"]    = GetSpellInfo(shaman_ids["IMPROVED_FIRE_NOVA"]),
    ["ELEMENTAL_MASTERY"]     = GetSpellInfo(shaman_ids["ELEMENTAL_MASTERY"]),
    ["ELEMENTAL_RAGE"]        = GetSpellInfo(shaman_ids["ELEMENTAL_RAGE"]),
+   ["MAELSTROM_POWER"]       = GetSpellInfo(shaman_ids["MAELSTROM_POWER"]),
    ["FLURRY"]                = GetSpellInfo(shaman_ids["FLURRY"]),
    ["MAELSTROM_WEAPON"]      = GetSpellInfo(shaman_ids["MAELSTROM_WEAPON"]),
    ["TIDAL_FORCE"]           = GetSpellInfo(shaman_ids["TIDAL_FORCE"]),
@@ -310,7 +318,8 @@ local priest_before = {
 -- Mage spells
 local mage_ids = {
    ["MAGE_ARMOR"]          = 43024,
-   ["QUAD_CORE"]           = 70747,  -- T10 Buff when mage casts Mirror Image
+   ["PUSHING_THE_LIMIT"]   = 70753,  -- 2T10 Buff when mage consume Hot Streak/Missile Barrage/Brain Freeze: 12% haste / 5 seg
+   ["QUAD_CORE"]           = 70747,  -- 4T10 Buff when mage casts Mirror Image: 18% damage / 30 seg
    ["PRESENCE_OF_MIND"]    = 12043,
    ["ARCANE_POWER"]        = 12042,
    ["INCANTER_ABSORPTION"] = 44394,
@@ -323,6 +332,7 @@ local mage_ids = {
 }
 local mage_before = {
    ["MAGE_ARMOR"]          = GetSpellInfo(mage_ids["MAGE_ARMOR"]),
+   ["PUSHING_THE_LIMIT"]   = GetSpellInfo(mage_ids["PUSHING_THE_LIMIT"]),
    ["QUAD_CORE"]           = GetSpellInfo(mage_ids["QUAD_CORE"]),
    ["PRESENCE_OF_MIND"]    = GetSpellInfo(mage_ids["PRESENCE_OF_MIND"]),
    ["ARCANE_POWER"]        = GetSpellInfo(mage_ids["ARCANE_POWER"]),
@@ -336,9 +346,9 @@ local mage_before = {
 }
 -- Warlock spells
 local warlock_ids = {
-   --["METAMORPHOSIS"] = 47241, -- This is not possible because Metamorphosis is considered a shapeshift, like druid forms and so it's a protected API
+   --["METAMORPHOSIS"] = 47241,  -- This is not possible because Metamorphosis is considered a shapeshift, like druid forms and so it's a protected API
    ["IMMOLATION_AURA"] = 50589,
-   ["DEVIOUS_MINDS"]   = 70840,  -- T10 buff: 10% damage
+   ["DEVIOUS_MINDS"]   = 70840,  -- 4T10 buff: 10% damage
    ["SHADOW_TRANCE"]   = 17941,  -- Insta Shadow Bolt
    ["ERADICATION"]     = 64371,
    ["LIFE_TAP"]        = 63321,
@@ -827,7 +837,7 @@ function AWR:ADDON_LOADED(addon)
    SLASH_AUTOMATICWEAPONREMOVAL1 = "/awr"
    SLASH_AUTOMATICWEAPONREMOVAL2 = "/automaticweaponremoval"
    SlashCmdList.AUTOMATICWEAPONREMOVAL = function(cmd) slashCommand(cmd) end
-   if wrDebug then send("remember that debug mode is " .. "|cff00ff00on|r") end
+   if wrDebug then send("remember that debug mode is " .. "|cff00ff00ON|r") end
 
    self:RegisterEvent("PLAYER_ENTERING_WORLD")
    self:UnregisterEvent("ADDON_LOADED")

@@ -1,5 +1,5 @@
 -- AutomaticWeaponRemoval Localization File
--- Version 1.0.6.2
+-- Version 1.0.6.3
 
 AWR_HELP1 = "This addon will automatically remove your weapons and bow when Lady Deathwhisper controls you."
 AWR_HELP2 = "Try typing |cffffaf24/awr toggle|r to toggle the addon state ON or OFF, you can also use |cff6fe014/awr on|r or |cffff3838/awr off|r."
