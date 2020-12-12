@@ -58,8 +58,9 @@ local removeFor = {
 
 
 -- Don't touch anything below
-local wrDebug          = false       -- AWR debug messages
-local DOMINATE_MIND_ID = 71289       -- Lady's Mind Control ability
+local wrDebug                  = false       -- AWR debug messages
+local DOMINATE_MIND_ID         = 71289       -- Lady's Mind Control ability
+local UNCONTROLLABLE_FRENZY_ID = 70923       -- Blood Queen's Mind Control ability
 --local DOMINATE_MIND    = GetSpellInfo(DOMINATE_MIND_ID)
 -- General spells
 local HEROISM_ID       = UnitFactionGroup("player") == "Horde" and 2825 or 32182   -- Horde = "Bloodlust" / Alliance = "Heroism"
@@ -701,6 +702,9 @@ function AWR:COMBAT_LOG_EVENT_UNFILTERED(timestamp, event, srcGUID, srcName, src
    elseif spellID == DOMINATE_MIND_ID and event == "SPELL_AURA_REMOVED" and destName == UnitName("player") then
       if wrDebug then send(GetSpellLink(DOMINATE_MIND_ID) .. " just faded from the player.") end
       onDominateMindFade()
+
+   elseif spellID == UNCONTROLLABLE_FRENZY_ID and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
+      onDominateMindCast()
    end
 end
 
