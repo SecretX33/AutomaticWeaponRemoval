@@ -379,6 +379,8 @@ local playerSpec
 local playerClassAndSpec
 local sentChatMessageTime   = 0       -- Last time the messageToBeSentWhenControlled were sent
 local sentAddonMessageTime  = 0       -- Last time the addonMessageForWeaponRemoval were sent
+local addedPlayerCountTime  = 0
+local addedWeaponsCountTime = 0
 local playerControlledCount = 0       -- How many times the player has been controlled by Lady
 local weaponsRemovedCount   = 0       -- How many times weapons have been removed by this addon
 
@@ -503,7 +505,7 @@ local function updatePlayerSpec()
 
    if spec~=nil then
       playerSpec = spec
-      AWR.db.spec = spec
+      AWR.dbc.spec = spec
    end
 end
 
@@ -511,7 +513,7 @@ local function getPlayerSpec()
    if playerSpec==nil then
       updatePlayerSpec()
    end
-   return playerSpec or AWR.db.spec
+   return playerSpec or AWR.dbc.spec
 end
 
 local function updatePlayerClassAndSpec()
@@ -622,9 +624,10 @@ local function removeWeapons(isTesting)
          send(addonMessageForWeaponRemoval)
          sentAddonMessageTime = GetTime()
       end
-      if not isTesting then
+      if not isTesting and (GetTime() > (addedWeaponsCountTime + 5)) then
          weaponsRemovedCount = weaponsRemovedCount + 1
-         AWR.db.weaponsremovedcount = weaponsRemovedCount
+         AWR.dbc.weaponsremovedcount = weaponsRemovedCount
+         addedWeaponsCountTime = GetTime()
       end
    elseif wrDebug then send("class is not selected for weapon removal.") end
 end
@@ -637,9 +640,10 @@ local function onDominateMindCast(isTesting)
       say(messageToBeSentWhenControlled)
       sentChatMessageTime = GetTime()
    end
-   if not isTesting then
+   if not isTesting and (GetTime() > (addedPlayerCountTime + 5)) then
       playerControlledCount = playerControlledCount + 1
-      AWR.db.playercontrolledcount = playerControlledCount
+      AWR.dbc.playercontrolledcount = playerControlledCount
+      addedPlayerCountTime = GetTime()
    end
    removeWeapons(isTesting)
 
@@ -704,6 +708,7 @@ function AWR:COMBAT_LOG_EVENT_UNFILTERED(timestamp, event, srcGUID, srcName, src
       onDominateMindFade()
 
    elseif spellID == UNCONTROLLABLE_FRENZY_ID and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
+      if wrDebug then send("BQ just casted " .. GetSpellLink(UNCONTROLLABLE_FRENZY_ID) .. " on the player.") end
       onDominateMindCast()
    end
 end
@@ -737,7 +742,7 @@ local function checkIfAddonShouldBeEnabled()
    updatePlayerLocalIfNeeded()
    -- Check if user disabled the addon, if the player is inside ICC, if the ICC is either 25n, 10hc or 25hc and if it's 10 man mode then if it's heroic or not
    -- The addon will remain active inside ICC because I cannot get the number of bossesKilled within the instance
-   if AWR.db.enabled and ((instanceName == "Icecrown Citadel" and (instanceDifficultyIndex > 1 or instanceIsHeroic)) or wrDebug) then
+   if AWR.dbc.enabled and ((instanceName == "Icecrown Citadel" and (instanceDifficultyIndex > 1 or instanceIsHeroic)) or wrDebug) then
       regForAllEvents()
       return true
    else
@@ -784,12 +789,12 @@ end
 -- Slash commands functions
 -- toggle, on, off
 local function slashCommandToggleAddon(state)
-   if state == "on" or (not AWR.db.enabled and state==nil) then
-      AWR.db.enabled = true
+   if state == "on" or (not AWR.dbc.enabled and state==nil) then
+      AWR.dbc.enabled = true
       checkIfAddonShouldBeEnabled()
       send("|cff00ff00on|r")
-   elseif state == "off" or (AWR.db.enabled and state==nil) then
-      AWR.db.enabled = false
+   elseif state == "off" or (AWR.dbc.enabled and state==nil) then
+      AWR.dbc.enabled = false
       checkIfAddonShouldBeEnabled()
       send("|cffff0000off|r")
    end
@@ -797,7 +802,7 @@ end
 
 -- status, state
 local function slashCommandStatus()
-   if not AWR.db.enabled then send(AWR_REASON_ADDONISOFF)
+   if not AWR.dbc.enabled then send(AWR_REASON_ADDONISOFF)
    else
       updatePlayerLocalIfNeeded()
       if instanceName~="Icecrown Citadel" then send(AWR_REASON_NOTINICC)
@@ -840,6 +845,16 @@ local function slashCommandDebug()
    end
 end
 
+local function slashCommandReset()
+   if not AWR.db.debug then return end
+
+   playerControlledCount = 0
+   AWR.dbc.playercontrolledcount = 0
+   weaponsRemovedCount = 0
+   AWR.dbc.weaponsremovedcount = 0
+   send("Count variables are reseted.")
+end
+
 -- count, report
 local function slashCommandCount()
    send(format(AWR_REPORT_COUNT,playerControlledCount,weaponsRemovedCount))
@@ -852,9 +867,23 @@ local function slashCommandMessage(message)
       return
    end
 
-   messageToBeSentWhenControlled = message
-   AWR.db.messagetobesentwhencontrolled = messageToBeSentWhenControlled
-   send(format(AWR_CHANGED_SAY_MESSAGE,messageToBeSentWhenControlled))
+   if message=="toggle" then
+      if not sendMessageOnChatWhenControlled then message="on"
+      else message="off" end
+   end
+   if message=="on" then
+      send(AWR_MESSAGE_ON)
+      sendMessageOnChatWhenControlled = true
+      AWR.db.sendmessageonchatwhencontrolled = sendMessageOnChatWhenControlled
+   elseif message=="off" then
+      send(AWR_MESSAGE_OFF)
+      sendMessageOnChatWhenControlled = false
+      AWR.db.sendmessageonchatwhencontrolled = sendMessageOnChatWhenControlled
+   else
+      messageToBeSentWhenControlled = message
+      AWR.db.messagetobesentwhencontrolled = messageToBeSentWhenControlled
+      send(format(AWR_CHANGED_SAY_MESSAGE,messageToBeSentWhenControlled))
+   end
 end
 
 -- channel
@@ -896,13 +925,14 @@ local function slashCommand(typed)
       sendNoPrefix(AWR_HELP8)
       sendNoPrefix(AWR_HELP9)
    elseif(cmd=="toggle") then slashCommandToggleAddon()
-   elseif(cmd=="on") then slashCommandToggleAddon("on")
-   elseif(cmd=="off") then slashCommandToggleAddon("off")
+   elseif(cmd=="on" or cmd=="enable") then slashCommandToggleAddon("on")
+   elseif(cmd=="off" or cmd=="disable") then slashCommandToggleAddon("off")
    elseif(cmd=="status" or cmd=="state") then slashCommandStatus()
    elseif(cmd=="version" or cmd=="ver") then slashCommandVersion()
    elseif(cmd=="spec") then slashCommandSpec()
    elseif(cmd=="removeweapon" or cmd=="removeweapons" or cmd=="rw") then onDominateMindCast(true)
    elseif(cmd=="debug") then slashCommandDebug()
+   elseif(cmd=="reset") then slashCommandReset()
    elseif(cmd=="count" or cmd=="report") then slashCommandCount()
    elseif(cmd=="message" or cmd=="m") then slashCommandMessage(extra)
    elseif(cmd=="channel" or cmd=="c") then slashCommandChannel(extra)
@@ -913,22 +943,20 @@ end
 function AWR:ADDON_LOADED(addon)
    if addon ~= "AutomaticWeaponRemoval" then return end
 
+   AWRDB = AWRDB or { enabled = true }
+   AWRDBC = AWRDBC or { enabled = true }
+   self.db = AWRDB
+   self.dbc = AWRDBC
+
    playerClass = select(2,UnitClass("player"))  -- Get player class
-   if not turnAddonOnEvenIfClassIsNotSelected and not isAddonEnabledForPlayerClass() then
-      if wrDebug then send("addon is not enabled for " .. playerClass .. ", disabling the addon.") end
-      self:UnregisterEvent("ADDON_LOADED")
-      return
-   elseif wrDebug then send("addon is enabled for " .. playerClass .. ", nice!")
-   end
 
    addonVersion = GetAddOnMetadata("AutomaticWeaponRemoval", "Version")
    groupTalentsLib = LibStub("LibGroupTalents-1.0")   -- Importing LibGroupTalents so I can use it later by using groupTalentsLib variable
-   AWRDB = AWRDB or { enabled = true }
-   self.db = AWRDB
    -- Loading variables
    wrDebug = self.db.debug or wrDebug
-   playerControlledCount = self.db.playercontrolledcount or playerControlledCount
-   weaponsRemovedCount = self.db.weaponsremovedcount or weaponsRemovedCount
+   playerControlledCount = self.dbc.playercontrolledcount or playerControlledCount
+   weaponsRemovedCount = self.dbc.weaponsremovedcount or weaponsRemovedCount
+   sendMessageOnChatWhenControlled = self.db.sendmessageonchatwhencontrolled or sendMessageOnChatWhenControlled
    messageToBeSentWhenControlled = self.db.messagetobesentwhencontrolled or messageToBeSentWhenControlled
    channelToSendMessage = self.db.channeltosendmessage or channelToSendMessage
    SLASH_AUTOMATICWEAPONREMOVAL1 = "/awr"

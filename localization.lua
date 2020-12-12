@@ -1,5 +1,5 @@
 -- AutomaticWeaponRemoval Localization File
--- Version 1.0.7
+-- Version 1.0.8
 
 AWR_ADDON_PREFIX = "|cff2f6af5AWR:|r "
 AWR_ADDON_STILL_LOADING = "Try again later, addon still loading..."
@@ -26,6 +26,8 @@ AWR_REPORT_COUNT = "you have been controlled by Lady Deathwhisper |cffffaf24%d|r
 
 AWR_CURRENT_MESSAGE = "current message is: |cffbffd31%s|r"
 AWR_CHANGED_SAY_MESSAGE = "you will now say |cff48df28%s|r when you get controlled."
+AWR_MESSAGE_ON = "turned messages |cff00ff00on|r."
+AWR_MESSAGE_OFF = "turned messages |cffff0000off|r."
 
 AWR_SELECTED_CHANNEL = "select channel is: |cfff84d13%s|r"
 AWR_CHANGED_CURRENTLY_CHANNEL = "you will now send messages on |cffff7631%s|r."
