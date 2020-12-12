@@ -2,7 +2,7 @@ local AWR = CreateFrame("frame")
 
 -- Configurations
 local sendMessageOnChatWhenControlled       = true     -- default is true
-local channelToSendMessage                  = "YELL"   -- valid options are SAY, YELL, RAID, RAID_WARNING, PARTY
+local channelToSendMessage                  = "YELL"   -- valid options are SAY, YELL, RAID, PARTY
 local messageToBeSentWhenControlled         = "I got controlled, CC me NOW!!!"
 local showAddonMessageForWeaponRemoval      = true     -- default is true
 local addonMessageForWeaponRemoval          = "Lady casted control on you, removing weapons."
@@ -368,6 +368,7 @@ local warlock_before = {
    ["BACKDRAFT"]       = GetSpellInfo(warlock_ids["BACKDRAFT"]),
 }
 
+local validChannels      = {"SAY", "YELL", "RAID", "PARTY"}
 local dpsPhysicalClasses = {"HUNTER", "DEATHKNIGHT", "PALADIN_Protection", "PALADIN_Retribution", "WARRIOR", "DRUID_Feral", "ROGUE", "SHAMAN_Enhancement"}
 local dpsSpellClasses    = {"DRUID_Balance","SHAMAN_Elemental","PRIEST_Shadow","MAGE","WARLOCK"}
 local healerClasses      = {"PALADIN_Holy","DRUID_Restoration","SHAMAN_Restoration","PRIEST_Discipline","PRIEST_Holy"}
@@ -387,7 +388,6 @@ local instanceIsHeroic
 
 local groupTalentsLib
 local addonVersion
-local addonPrefix = "|cff2f6af5AWR:|r %s"
 
 -- Upvalues
 local UnitInRaid, UnitAffectingCombat = UnitInRaid, UnitAffectingCombat
@@ -399,13 +399,22 @@ end)
 
 -- Utility functions
 local function send(msg)
-   if(msg~=nil) then print(addonPrefix:format(msg)) end
+   if(msg~=nil) then print(AWR_ADDON_PREFIX .. msg) end
+end
+
+local function sendNoPrefix(msg)
+   if(msg~=nil) then print(msg) end
 end
 
 local function say(msg)
    if(msg~=nil) then SendChatMessage(msg, channelToSendMessage) end
 end
 
+local is_int = function(n)
+   return (type(n) == "number") and (math.floor(n) == n)
+end
+
+-- [string utils]
 local function upperFirst(str)
    if(str==nil) then return "" end
    return (str:gsub("^%l", string.upper))
@@ -416,9 +425,27 @@ local function upperFirstOnly(str)
    return upperFirst(str:lower())
 end
 
+-- Remove spaces on start and end of string
+local function trim(s)
+   return string.match(s,'^()%s*$') and '' or string.match(s,'^%s*(.*%S)')
+end
+
+local function removeWords(myString, numberOfWords)
+   if (myString~=nil and numberOfWords~=nil) then
+      if is_int(numberOfWords) then
+         for i=1, numberOfWords do
+            myString = string.gsub(myString,"^(%s*%a+)","",1)
+         end
+         return trim(myString)
+      else send("numberOfWords arg came, it's not nil BUT it's also NOT an integer, report this, type = " .. tostring(type(numberOfWords))) end
+   end
+   return ""
+end
+-- end of [string utils]
+
 local function doesElementContainsAnyValueFromTable(table, element)
-   if table==nil then send("table came nil inside function to check if table contain an element, report this");return; end
-   if element==nil then send("element came nil inside function to check if table contain an element, report this");return; end
+   if table==nil then send("table came nil inside function to check if table contain a value that fits inside an element, report this");return; end
+   if element==nil then send("element came nil inside function to check if table contain a value that fits inside an element, report this");return; end
 
    -- If any value from the table is contained inside the element then return true, aka the table have a value that match fits inside the element
    for _, value in pairs(table) do
@@ -427,6 +454,24 @@ local function doesElementContainsAnyValueFromTable(table, element)
       end
    end
    return false
+end
+
+local function tableHasThisEntry(table, entry)
+   if table==nil then send("table came nil inside function that check if table has a value, report this");return; end
+   if entry==nil then send("entry came nil inside function to check if table has a value, report this");return; end
+
+   for _, value in ipairs(table) do
+      if value == entry then
+         return true
+      end
+   end
+   return false
+end
+
+local function getTableLength(table)
+   local count = 0
+   for _ in pairs(table) do count = count + 1 end
+   return count
 end
 
 local function isAddonEnabledForPlayerClass()
@@ -796,13 +841,56 @@ local function slashCommandCount()
    send(format(AWR_REPORT_COUNT,playerControlledCount,weaponsRemovedCount))
 end
 
-local function slashCommand(cmd)
-   if(cmd~=nil) then cmd = cmd:lower() end
-   if(cmd=="help" or cmd=="?" or cmd=="") then
-      send(AWR_HELP1)
-      send(AWR_HELP2)
-      send(AWR_HELP3)
-      send(AWR_HELP4)
+-- message
+local function slashCommandMessage(message)
+   if message==nil or message=="" then
+      send(format(AWR_CURRENT_MESSAGE,messageToBeSentWhenControlled))
+      return
+   end
+
+   messageToBeSentWhenControlled = message
+   AWR.db.messagetobesentwhencontrolled = messageToBeSentWhenControlled
+   send(format(AWR_CHANGED_SAY_MESSAGE,messageToBeSentWhenControlled))
+end
+
+-- channel
+local function slashCommandChannel(channel)
+   if channel==nil or channel=="" then
+      send(format(AWR_SELECTED_CHANNEL,channelToSendMessage))
+      return
+   end
+
+   channel = channel:upper()
+   if tableHasThisEntry(validChannels, channel) then
+      send(format(AWR_CHANGED_CURRENTLY_CHANNEL,channel))
+      channelToSendMessage = channel
+      AWR.db.channeltosendmessage = channelToSendMessage
+   else
+      local str = ""
+      local validChannelsLength = getTableLength(validChannels)
+      for index, value in ipairs(validChannels) do
+         str = str .. "\"" .. value .. "\"" .. (index~=validChannelsLength and ", " or ".")
+      end
+      send(format(AWR_ERROR_INVALID_CHANNEL,str))
+   end
+
+end
+
+local function slashCommand(typed)
+   local cmd = string.match(typed, "^(%w+)") -- Gets the first word the user has typed
+   if cmd~=nil then cmd = cmd:lower() end            -- And makes it lower case
+   local extra = removeWords(typed,1)
+
+   if(cmd=="help" or cmd=="?" or cmd=="" or cmd==nil) then
+      sendNoPrefix(AWR_HELP1)
+      sendNoPrefix(AWR_HELP2)
+      sendNoPrefix(AWR_HELP3)
+      sendNoPrefix(AWR_HELP4)
+      sendNoPrefix(AWR_HELP5)
+      sendNoPrefix(AWR_HELP6)
+      sendNoPrefix(AWR_HELP7)
+      sendNoPrefix(AWR_HELP8)
+      sendNoPrefix(AWR_HELP9)
    elseif(cmd=="toggle") then slashCommandToggleAddon()
    elseif(cmd=="on") then slashCommandToggleAddon("on")
    elseif(cmd=="off") then slashCommandToggleAddon("off")
@@ -812,6 +900,8 @@ local function slashCommand(cmd)
    elseif(cmd=="removeweapon" or cmd=="removeweapons" or cmd=="rw") then onDominateMindCast(true)
    elseif(cmd=="debug") then slashCommandDebug()
    elseif(cmd=="count" or cmd=="report") then slashCommandCount()
+   elseif(cmd=="message" or cmd=="m") then slashCommandMessage(extra)
+   elseif(cmd=="channel" or cmd=="c") then slashCommandChannel(extra)
    end
 end
 -- End of slash commands function
@@ -829,15 +919,18 @@ function AWR:ADDON_LOADED(addon)
 
    addonVersion = GetAddOnMetadata("AutomaticWeaponRemoval", "Version")
    groupTalentsLib = LibStub("LibGroupTalents-1.0")   -- Importing LibGroupTalents so I can use it later by using groupTalentsLib variable
-   AWRDB = AWRDB or { enabled = true }  -- DB just stores if addon is turned on or off
+   AWRDB = AWRDB or { enabled = true }
    self.db = AWRDB
+   -- Loading variables
    wrDebug = self.db.debug or wrDebug
    playerControlledCount = self.db.playercontrolledcount or playerControlledCount
    weaponsRemovedCount = self.db.weaponsremovedcount or weaponsRemovedCount
+   messageToBeSentWhenControlled = self.db.messagetobesentwhencontrolled or messageToBeSentWhenControlled
+   channelToSendMessage = self.db.channeltosendmessage or channelToSendMessage
    SLASH_AUTOMATICWEAPONREMOVAL1 = "/awr"
    SLASH_AUTOMATICWEAPONREMOVAL2 = "/automaticweaponremoval"
    SlashCmdList.AUTOMATICWEAPONREMOVAL = function(cmd) slashCommand(cmd) end
-   if wrDebug then send("remember that debug mode is " .. "|cff00ff00ON|r") end
+   if wrDebug then send("remember that debug mode is " .. "|cff00ff00ON|r.") end
 
    self:RegisterEvent("PLAYER_ENTERING_WORLD")
    self:UnregisterEvent("ADDON_LOADED")

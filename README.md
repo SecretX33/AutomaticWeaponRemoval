@@ -17,13 +17,17 @@ This addon remove your weapons automatically when you are controlled by Lady Dea
 
 /awr on/off - Turn addon on or off
 
+/awr message *"your_message"* - Change the message that you will say when Lady controls you
+
+/awr channel *"your_channel"* - Change the channel where you will send the message
+
 /awr removeweapon - Simulate what addon will do when Lady controls you
 
 /awr count - See how many times Lady has controlled you and how many times the addon has unequiped your weapons
 
 /awr spec - See what class and spec you are
 
-/awr status - Show if addon is on or off and why, very useful to double check current addon state
+/awr status - Show if addon is on/off and why, very useful to double check current addon state
 
 /awr version - Show addon version
 
