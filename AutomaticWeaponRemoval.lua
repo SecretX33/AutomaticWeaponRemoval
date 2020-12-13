@@ -57,8 +57,10 @@ local removeFor = {
 
 -- Don't touch anything below
 local wrDebug                  = false       -- AWR debug messages
-local DOMINATE_MIND_ID         = 71289       -- Lady's Mind Control ability
-local UNCONTROLLABLE_FRENZY_ID = 70923       -- Blood Queen's Mind Control ability
+local DOMINATE_MIND_ID         = 71289       -- Lady's Mind Control ability (ICC)
+local UNCONTROLLABLE_FRENZY_ID = 70923       -- Blood Queen's Mind Control ability (ICC)
+local YOGG_INSANE_ID           = 63120       -- Yogg-Saron's Mind Control ability (Ulduar)
+local CHAINS_OF_KELTHUZAD_ID   = 28410       -- Kel'Thuzad's Mind Control ability (Naxxramas)
 -- General spells
 local HEROISM_ID       = UnitFactionGroup("player") == "Horde" and 2825 or 32182   -- Horde = "Bloodlust" / Alliance = "Heroism"
 local HEROISM          = GetSpellInfo(HEROISM_ID)
@@ -367,6 +369,7 @@ local warlock_before = {
 }
 
 local validChannels      = {"SAY", "YELL", "RAID", "PARTY"}
+local validInstances     = {"Icecrown Citadel", "Ulduar", "Naxxramas"}
 local dpsPhysicalClasses = {"HUNTER", "DEATHKNIGHT", "PALADIN_Protection", "PALADIN_Retribution", "WARRIOR", "DRUID_Feral", "ROGUE", "SHAMAN_Enhancement"}
 local dpsSpellClasses    = {"DRUID_Balance","SHAMAN_Elemental","PRIEST_Shadow","MAGE","WARLOCK"}
 local healerClasses      = {"PALADIN_Holy","DRUID_Restoration","SHAMAN_Restoration","PRIEST_Discipline","PRIEST_Holy"}
@@ -376,8 +379,8 @@ local playerSpec
 local playerClassAndSpec
 local sentChatMessageTime   = 0       -- Last time the messageToBeSentWhenControlled were sent
 local sentAddonMessageTime  = 0       -- Last time the addonMessageForWeaponRemoval were sent
-local addedPlayerCountTime  = 0
-local addedWeaponsCountTime = 0
+local addedPlayerCountTime  = 0       -- Last time addon added +1 to the mind control count
+local addedWeaponsCountTime = 0       -- Last time addon added +1 to the weapon removal count
 local playerControlledCount = 0       -- How many times the player has been controlled by Lady
 local weaponsRemovedCount   = 0       -- How many times weapons have been removed by this addon
 
@@ -731,6 +734,16 @@ function AWR:COMBAT_LOG_EVENT_UNFILTERED(timestamp, event, srcGUID, srcName, src
       if wrDebug then send(srcName .. " just casted " .. (GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " on the player.") end
       onDominateMindCast(srcName)
 
+   -- If player gets controlled by Yogg-Saron (Ulduar)
+   elseif spellID == YOGG_INSANE_ID and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
+      if wrDebug then send(srcName .. " just casted " .. (GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " on the player.") end
+      onDominateMindCast(srcName)
+
+   -- If player gets controlled by Kel'Thuzad (Naxxramas)
+   elseif spellID == CHAINS_OF_KELTHUZAD_ID and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
+      if wrDebug then send(srcName .. " just casted " .. (GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " on the player.") end
+      onDominateMindCast(srcName)
+
    -- A test case with a Paladin casting 10 minute Kings on player to simulate the Mind Control
    elseif wrDebug and spellID == 20217 and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
       send(srcName .. " just casted " .. (GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " on the player.")
@@ -757,7 +770,7 @@ local function unregFromAllEvents()
    AWR:UnregisterEvent("PLAYER_REGEN_ENABLED")
    AWR:UnregisterEvent("PLAYER_REGEN_DISABLED")
    AWR:UnregisterEvent("PLAYER_TALENT_UPDATE")
-   if instanceName~="Icecrown Citadel" then AWR:UnregisterEvent("PLAYER_DIFFICULTY_CHANGED") end -- Even if the addon unregister from all events, if player is inside ICC 10-man normal its difficulty may still change to heroic
+   AWR:UnregisterEvent("PLAYER_DIFFICULTY_CHANGED")
 end
 
 -- Checks if addon should be enabled, and enable it if isn't enabled, and disable if it should not be enabled
@@ -765,16 +778,21 @@ local function checkIfAddonShouldBeEnabled()
    if(AWR==nil) then send("frame came nil inside function that check if this addon should be enabled, report this"); return; end
 
    updatePlayerLocalIfNeeded()
-   -- Check if user disabled the addon, if the player is inside ICC, if the ICC is either 25n, 10hc or 25hc and if it's 10 man mode then if it's heroic or not
-   -- The addon will remain active inside ICC because I cannot get the number of bossesKilled within the instance
+   local reason = AWR_REASON_ADDON_IS_OFF;
    if AWR.dbc.enabled then
-      if((instanceName == "Icecrown Citadel" and (instanceDifficultyIndex > 1 or instanceIsHeroic)) or wrDebug) then
+      if wrDebug then
+         reason = format(AWR_REASON_DEBUG_MODE_IS_ON,instanceName)
+         return true, reason
+      elseif tableHasThisEntry(validInstances, instanceName) then
          regForAllEvents()
-         return true
+         reason = format(AWR_REASON_INSIDE_VALID_INSTANCE,instanceName)
+         return true, reason
+      else
+         reason = format(AWR_REASON_NOT_INSIDE_VALID_INSTANCE)
       end
    end
    unregFromAllEvents()
-   return false
+   return false, reason
 end
 
 -- Called when player leaves combat
@@ -828,12 +846,10 @@ end
 
 -- status, state
 local function slashCommandStatus()
-   if not AWR.dbc.enabled then send(AWR_REASON_ADDONISOFF)
+   if not AWR.dbc.enabled then
+      send(AWR_REASON_ADDON_IS_OFF)
    else
-      updatePlayerLocalIfNeeded()
-      if instanceName~="Icecrown Citadel" then send(AWR_REASON_NOTINICC)
-      elseif (difficultyIndex==1 and isHeroic==0) then send(AWR_REASON_RAIDDIFFICULTY)
-      else send(AWR_REASON_INSIDEICC) end
+      send(select(2,checkIfAddonShouldBeEnabled()))
    end
 end
 
@@ -869,6 +885,7 @@ local function slashCommandDebug()
       AWR.db.debug = false
       send("debug mode turned |cffff0000off|r")
    end
+   checkIfAddonShouldBeEnabled()
 end
 
 local function slashCommandReset()

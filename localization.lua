@@ -21,10 +21,10 @@ AWR_LADY_NAME = "Lady Deathwhisper"
 AWR_ADDON_MESSAGE_FOR_CONTROL = "%s casted control on you."
 AWR_ADDON_MESSAGE_FOR_CONTROL_AND_WEAPON_REMOVAL = "%s casted control on you, removing weapons."
 
-AWR_REASON_ADDONISOFF = "|cffffe83bstatus:|r addon is |cffff0000off|r because it was set as OFF by the command \'/awr toggle\'."
-AWR_REASON_NOTINICC = "|cffffe83bstatus:|r addon is |cffff0000off|r because you are not inside ICC right now."
-AWR_REASON_RAIDDIFFICULTY = "|cffffe83bstatus:|r addon is |cffff0000off|r because your ICC is in 10-man normal mode and Lady doesn't cast Dominate Mind in this difficulty."
-AWR_REASON_INSIDEICC = "|cffffe83bstatus:|r addon is |cff00ff00on|r because you are inside ICC."
+AWR_REASON_ADDON_IS_OFF = "|cffffe83bstatus:|r addon is |cffff0000off|r because it was set as OFF by the command \'/awr toggle\'."
+AWR_REASON_DEBUG_MODE_IS_ON = "|cffffe83bstatus:|r addon is |cff00ff00on|r because debug mode is turned on."
+AWR_REASON_INSIDE_VALID_INSTANCE = "|cffffe83bstatus:|r addon is |cff00ff00on|r because you are inside a valid instance (%s)."
+AWR_REASON_NOT_INSIDE_VALID_INSTANCE = "|cffffe83bstatus:|r addon is |cffff0000off|r because you not inside a valid instance."
 
 AWR_REPORT_COUNT = "you have been controlled by bosses |cffffaf24%d|r time(s) and your weapons have been removed by this addon |cffffaf24%d|r time(s)."
 
