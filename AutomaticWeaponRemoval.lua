@@ -5,9 +5,7 @@ local sendMessageOnChatWhenControlled       = true     -- default is true
 local channelToSendMessage                  = "YELL"   -- valid options are SAY, YELL, RAID, PARTY
 local messageToBeSentWhenControlled         = "I got controlled, CC me NOW!!!"
 local showAddonMessageForWeaponRemoval      = true     -- default is true
-local addonMessageForWeaponRemoval          = "Lady casted control on you, removing weapons."
 
-local turnAddonOnEvenIfClassIsNotSelected    = true     -- default is true
 local removeOnlyBowIfHunter                  = false    -- default is false
 local removePaladinRFAfterControlsEnd        = true     -- default is true, the addon won't remove RF if player is protection paladin even if this is set "true"
 local removeDivinePleaAfterControlsEndIfHoly = true     -- default is true, the idea is to be able to fully heal someone (or yourself) after dominate mind fades because usually you are low on HP then that happens, so be able to heal 100% is better than 50%
@@ -61,7 +59,6 @@ local removeFor = {
 local wrDebug                  = false       -- AWR debug messages
 local DOMINATE_MIND_ID         = 71289       -- Lady's Mind Control ability
 local UNCONTROLLABLE_FRENZY_ID = 70923       -- Blood Queen's Mind Control ability
---local DOMINATE_MIND    = GetSpellInfo(DOMINATE_MIND_ID)
 -- General spells
 local HEROISM_ID       = UnitFactionGroup("player") == "Horde" and 2825 or 32182   -- Horde = "Bloodlust" / Alliance = "Heroism"
 local HEROISM          = GetSpellInfo(HEROISM_ID)
@@ -597,19 +594,46 @@ local function getICCDifficultyIndexAsString(index)
 end ]]--
 
 local function cancelAllBuffsFromPlayerInTable(buffTable)
-   if buffTable ==nil then send("buffTable came nil inside function to remove all buffs inside table from player, report this.");return false; end
+   if buffTable==nil then send("buffTable came nil inside function to remove all buffs inside table from player, report this.");return false; end
 
    for _, value in pairs(buffTable) do
       CancelUnitBuff("player", value)
    end
 end
 
+local function sendAddonMessageForControlled(removedWeapons, bossName, isTesting)
+   if(removedWeapons==nil) then send("removedWeapons boolean came nil inside function that send addon message, report this.");return; end
+   if(bossName==nil) then bossName = AWR_LADY_NAME end
+   if(isTesting==nil) then isTesting = false end
+
+   if showAddonMessageForWeaponRemoval and (GetTime() > (sentAddonMessageTime + 5)) then -- GetTime comparison here is preventing sending same message two times in a row, a "just in case" check
+      if removedWeapons then
+         send(format(AWR_ADDON_MESSAGE_FOR_CONTROL_AND_WEAPON_REMOVAL,bossName))
+      else
+         send(format(AWR_ADDON_MESSAGE_FOR_CONTROL,bossName))
+      end
+      sentAddonMessageTime = GetTime()
+   end
+end
+
+local function sayMessageOnChatForControlled(isTesting)
+   if(isTesting==nil) then isTesting = false end
+
+   if sendMessageOnChatWhenControlled and (GetTime() > (sentChatMessageTime + 5)) and (not wrDebug or not isTesting) then -- GetTime comparison here is preventing sending same message two times in a row, a "just in case" check
+      say(messageToBeSentWhenControlled)
+      sentChatMessageTime = GetTime()
+   end
+end
+
 -- Logic functions are under here
-local function removeWeapons(isTesting)
+local function removeWeapons(bossName, isTesting)
+   if(bossName==nil) then bossName = AWR_LADY_NAME end
    if(isTesting==nil) then isTesting = false end
    updatePlayerClassAndSpecIfNeeded()
 
+   local removedWeapons = false
    if removeFor[playerClassAndSpec] then
+      removedWeapons = true
       if playerClass~="HUNTER" or not removeOnlyBowIfHunter then
          PickupInventoryItem(16)
          PutItemInBackpack()
@@ -620,32 +644,27 @@ local function removeWeapons(isTesting)
          PickupInventoryItem(18)
          PutItemInBackpack()
       end
-      if showAddonMessageForWeaponRemoval and (GetTime() > (sentAddonMessageTime + 5)) then -- GetTime comparison here is preventing sending same message two times in a row, a "just in case" check
-         send(addonMessageForWeaponRemoval)
-         sentAddonMessageTime = GetTime()
-      end
       if not isTesting and (GetTime() > (addedWeaponsCountTime + 5)) then
          weaponsRemovedCount = weaponsRemovedCount + 1
          AWR.dbc.weaponsremovedcount = weaponsRemovedCount
          addedWeaponsCountTime = GetTime()
       end
    elseif wrDebug then send("class is not selected for weapon removal.") end
+   sendAddonMessageForControlled(removedWeapons, bossName, isTesting)
 end
 
-local function onDominateMindCast(isTesting)
+local function onDominateMindCast(bossName, isTesting)
+   if(bossName==nil) then bossName = AWR_LADY_NAME end
    if(isTesting==nil) then isTesting = false end
    updatePlayerClassAndSpecIfNeeded()
 
-   if sendMessageOnChatWhenControlled and (GetTime() > (sentChatMessageTime + 5)) and (not wrDebug or not isTesting) then -- GetTime comparison here is preventing sending same message two times in a row, a "just in case" check
-      say(messageToBeSentWhenControlled)
-      sentChatMessageTime = GetTime()
-   end
+   sayMessageOnChatForControlled(isTesting)
    if not isTesting and (GetTime() > (addedPlayerCountTime + 5)) then
       playerControlledCount = playerControlledCount + 1
       AWR.dbc.playercontrolledcount = playerControlledCount
       addedPlayerCountTime = GetTime()
    end
-   removeWeapons(isTesting)
+   removeWeapons(bossName, isTesting)
 
    if not isTesting or wrDebug then
       -- Canceling player buffs
@@ -698,18 +717,24 @@ end
 function AWR:COMBAT_LOG_EVENT_UNFILTERED(timestamp, event, srcGUID, srcName, srcFlags, destGUID, destName, destFlags, spellID, spellName, ...)
    if srcName ~= UnitName("player") and destName ~= UnitName("player") then return end -- The event if NOT from the player, so that is not relevant
 
-   -- If Lady cast Dominate Mind on player
+   -- If Lady cast Dominate Mind on player (ICC)
    if spellID == DOMINATE_MIND_ID and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
-      if wrDebug then send("Lady just casted " .. GetSpellLink(DOMINATE_MIND_ID) .. " on the player.") end
-      onDominateMindCast()
+      if wrDebug then send(srcName .. " just casted " .. (GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " on the player.") end
+      onDominateMindCast(srcName)
 
    elseif spellID == DOMINATE_MIND_ID and event == "SPELL_AURA_REMOVED" and destName == UnitName("player") then
-      if wrDebug then send(GetSpellLink(DOMINATE_MIND_ID) .. " just faded from the player.") end
+      if wrDebug then send((GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " just faded from the player.") end
       onDominateMindFade()
 
+   -- If player gets controlled by BQ (ICC) after failing to bite someone
    elseif spellID == UNCONTROLLABLE_FRENZY_ID and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
-      if wrDebug then send("BQ just casted " .. GetSpellLink(UNCONTROLLABLE_FRENZY_ID) .. " on the player.") end
-      onDominateMindCast()
+      if wrDebug then send(srcName .. " just casted " .. (GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " on the player.") end
+      onDominateMindCast(srcName)
+
+   -- A test case with a Paladin casting 10 minute Kings on player to simulate the Mind Control
+   elseif wrDebug and spellID == 20217 and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
+      send(srcName .. " just casted " .. (GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " on the player.")
+      onDominateMindCast(srcName)
    end
 end
 
@@ -742,13 +767,14 @@ local function checkIfAddonShouldBeEnabled()
    updatePlayerLocalIfNeeded()
    -- Check if user disabled the addon, if the player is inside ICC, if the ICC is either 25n, 10hc or 25hc and if it's 10 man mode then if it's heroic or not
    -- The addon will remain active inside ICC because I cannot get the number of bossesKilled within the instance
-   if AWR.dbc.enabled and ((instanceName == "Icecrown Citadel" and (instanceDifficultyIndex > 1 or instanceIsHeroic)) or wrDebug) then
-      regForAllEvents()
-      return true
-   else
-      unregFromAllEvents()
-      return false
+   if AWR.dbc.enabled then
+      if((instanceName == "Icecrown Citadel" and (instanceDifficultyIndex > 1 or instanceIsHeroic)) or wrDebug) then
+         regForAllEvents()
+         return true
+      end
    end
+   unregFromAllEvents()
+   return false
 end
 
 -- Called when player leaves combat
@@ -852,7 +878,7 @@ local function slashCommandReset()
    AWR.dbc.playercontrolledcount = 0
    weaponsRemovedCount = 0
    AWR.dbc.weaponsremovedcount = 0
-   send("Count variables are reseted.")
+   send("Count variables got zeroed.")
 end
 
 -- count, report
@@ -910,8 +936,8 @@ local function slashCommandChannel(channel)
 end
 
 local function slashCommand(typed)
-   local cmd = string.match(typed, "^(%w+)") -- Gets the first word the user has typed
-   if cmd~=nil then cmd = cmd:lower() end            -- And makes it lower case
+   local cmd = string.match(typed,"^(%w+)") -- Gets the first word the user has typed
+   if cmd~=nil then cmd = cmd:lower() end           -- And makes it lower case
    local extra = removeWords(typed,1)
 
    if(cmd=="help" or cmd=="?" or cmd=="" or cmd==nil) then
@@ -930,7 +956,7 @@ local function slashCommand(typed)
    elseif(cmd=="status" or cmd=="state") then slashCommandStatus()
    elseif(cmd=="version" or cmd=="ver") then slashCommandVersion()
    elseif(cmd=="spec") then slashCommandSpec()
-   elseif(cmd=="removeweapon" or cmd=="removeweapons" or cmd=="rw") then onDominateMindCast(true)
+   elseif(cmd=="removeweapon" or cmd=="removeweapons" or cmd=="rw") then onDominateMindCast("Lady Deathwhisper",true)
    elseif(cmd=="debug") then slashCommandDebug()
    elseif(cmd=="reset") then slashCommandReset()
    elseif(cmd=="count" or cmd=="report") then slashCommandCount()

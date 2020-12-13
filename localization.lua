@@ -1,5 +1,5 @@
 -- AutomaticWeaponRemoval Localization File
--- Version 1.0.8
+-- Version 1.0.9
 
 AWR_ADDON_PREFIX = "|cff2f6af5AWR:|r "
 AWR_ADDON_STILL_LOADING = "Try again later, addon still loading..."
@@ -17,12 +17,16 @@ AWR_HELP9 = "|cff2f6af5/awr version:|r Show addon version."
 --AWR_HELP3 = "You can doublecheck if addon is turned on or off with the reason by typing |cffdde813/awr status|r. Also, you can simulate a dominate mind by typing |cff26fff1/awr removeweapon|r."
 --AWR_HELP4 = "See how many times you have been controlled with |cffba69f5/awr count|r. Check addon version with |cff55e6a9/awr version|r."
 
+AWR_LADY_NAME = "Lady Deathwhisper"
+AWR_ADDON_MESSAGE_FOR_CONTROL = "%s casted control on you."
+AWR_ADDON_MESSAGE_FOR_CONTROL_AND_WEAPON_REMOVAL = "%s casted control on you, removing weapons."
+
 AWR_REASON_ADDONISOFF = "|cffffe83bstatus:|r addon is |cffff0000off|r because it was set as OFF by the command \'/awr toggle\'."
 AWR_REASON_NOTINICC = "|cffffe83bstatus:|r addon is |cffff0000off|r because you are not inside ICC right now."
 AWR_REASON_RAIDDIFFICULTY = "|cffffe83bstatus:|r addon is |cffff0000off|r because your ICC is in 10-man normal mode and Lady doesn't cast Dominate Mind in this difficulty."
 AWR_REASON_INSIDEICC = "|cffffe83bstatus:|r addon is |cff00ff00on|r because you are inside ICC."
 
-AWR_REPORT_COUNT = "you have been controlled by Lady Deathwhisper |cffffaf24%d|r time(s) and your weapons have been removed by this addon |cffffaf24%d|r time(s)."
+AWR_REPORT_COUNT = "you have been controlled by bosses |cffffaf24%d|r time(s) and your weapons have been removed by this addon |cffffaf24%d|r time(s)."
 
 AWR_CURRENT_MESSAGE = "current message is: |cffbffd31%s|r"
 AWR_CHANGED_SAY_MESSAGE = "you will now say |cff48df28%s|r when you get controlled."
