@@ -9,7 +9,7 @@
 ## SavedVariablesPerCharacter: AWRDBC
 ## OptionalDeps: BugSack, !Swatter
 ## X-Category: Combat Assist
-## X-Date: 12/12/2020
+## X-Date: 12/13/2020
 
 embeds.xml
 localization.lua
