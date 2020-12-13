@@ -5,7 +5,9 @@
  
 This addon is made for World of Warcraft 3.3.5a
  
-This addon remove your weapons automatically when you are controlled by Lady Deathwhisper, and more, like removing Paladin's RF buff if you are not a tank. No interface, just the slash commands, all configs related to classes and specs can be done in the Lua file.
+This addon remove your weapons automatically when you get controlled by a variety os bosses, like Lady Deathwhisper, and a lot more, like removing Paladin's RF buff if you are not a tank. 
+
+No interface, most configs can be done by just using the slash commands, all configs related to classes and specs can be done in the Lua file.
 
 ------------
 
@@ -23,7 +25,7 @@ This addon remove your weapons automatically when you are controlled by Lady Dea
 
 /awr removeweapon - Simulate what addon will do when Lady controls you
 
-/awr count - See how many times Lady has controlled you and how many times the addon has unequiped your weapons
+/awr count - See how many you have been controlled and how many times the addon has unequiped your weapons
 
 /awr spec - See what class and spec you are
 
@@ -57,7 +59,7 @@ If you want to download an earlier version of the addon, you can do it by checki
 
 **Q:** Your addon is awesome, but I really miss an UI (User Interface), couldn't you add one?
 
-**A:** Yes and no. I am by no means a "professional add-on developer" of some sort, I made this addon for fun, and to help my guild. I don't know how to make an add-on interface, but I can research it, if you guys really want one let me know and I'll make one.
+**A:** Yes and no. I am by no means a "professional add-on developer" of some sort, I made this addon for fun, and to help my guild. I don't know how to make an add-on interface, but I can research it, if you guys really want one let me know, and I'll make one.
 
 ## Reporting issues
 
