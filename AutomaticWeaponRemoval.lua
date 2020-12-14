@@ -56,11 +56,24 @@ local removeFor = {
 
 
 -- Don't touch anything below
-local wrDebug                  = false       -- AWR debug messages
-local DOMINATE_MIND_ID         = 71289       -- Lady's Mind Control ability (ICC)
-local UNCONTROLLABLE_FRENZY_ID = 70923       -- Blood Queen's Mind Control ability (ICC)
-local YOGG_INSANE_ID           = 63120       -- Yogg-Saron's Mind Control ability (Ulduar)
-local CHAINS_OF_KELTHUZAD_ID   = 28410       -- Kel'Thuzad's Mind Control ability (Naxxramas)
+local wrDebug                 = false      -- AWR debug messages
+local mind_control_spells_ids = {
+   ["DOMINATE_MIND"]          = 71289,     -- Lady's Mind Control ability (ICC)
+   ["UNCONTROLLABLE_FRENZY"]  = 70923,     -- Blood Queen's Mind Control ability (ICC)
+   ["YOGG_INSANE"]            = 63120,     -- Yogg-Saron's Mind Control ability (Ulduar)
+   ["CHAINS_OF_KELTHUZAD"]    = 28410,     -- Kel'Thuzad's Mind Control ability (Naxxramas)
+}
+-- Look for these spell casts
+local mind_control_spells_cast = {
+   ["DOMINATE_MIND"]         = mind_control_spells_ids["DOMINATE_MIND"],
+   ["UNCONTROLLABLE_FRENZY"] = mind_control_spells_ids["UNCONTROLLABLE_FRENZY"],
+   ["YOGG_INSANE"]           = mind_control_spells_ids["YOGG_INSANE"],
+   ["CHAINS_OF_KELTHUZAD"]   = mind_control_spells_ids["CHAINS_OF_KELTHUZAD"],
+}
+-- And also for these spell fades
+local mind_control_spells_fade = {
+   ["DOMINATE_MIND"]         = mind_control_spells_ids["DOMINATE_MIND"],
+}
 -- General spells
 local HEROISM_ID       = UnitFactionGroup("player") == "Horde" and 2825 or 32182   -- Horde = "Bloodlust" / Alliance = "Heroism"
 local HEROISM          = GetSpellInfo(HEROISM_ID)
@@ -661,13 +674,13 @@ local function onDominateMindCast(bossName, isTesting)
    if(isTesting==nil) then isTesting = false end
    updatePlayerClassAndSpecIfNeeded()
 
+   removeWeapons(bossName, isTesting)
    sayMessageOnChatForControlled(isTesting)
    if not isTesting and (GetTime() > (addedPlayerCountTime + 5)) then
       playerControlledCount = playerControlledCount + 1
       AWR.dbc.playercontrolledcount = playerControlledCount
       addedPlayerCountTime = GetTime()
    end
-   removeWeapons(bossName, isTesting)
 
    if not isTesting or wrDebug then
       -- Canceling player buffs
@@ -721,28 +734,13 @@ function AWR:COMBAT_LOG_EVENT_UNFILTERED(timestamp, event, srcGUID, srcName, src
    if srcName ~= UnitName("player") and destName ~= UnitName("player") then return end -- The event if NOT from the player, so that is not relevant
 
    -- If Lady cast Dominate Mind on player (ICC)
-   if spellID == DOMINATE_MIND_ID and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
+   if tableHasThisEntry(mind_control_spells_cast, spellID) and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
       if wrDebug then send(srcName .. " just casted " .. (GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " on the player.") end
       onDominateMindCast(srcName)
 
-   elseif spellID == DOMINATE_MIND_ID and event == "SPELL_AURA_REMOVED" and destName == UnitName("player") then
+   elseif tableHasThisEntry(mind_control_spells_fade, spellID) and event == "SPELL_AURA_REMOVED" and destName == UnitName("player") then
       if wrDebug then send((GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " just faded from the player.") end
       onDominateMindFade()
-
-   -- If player gets controlled by BQ (ICC) after failing to bite someone
-   elseif spellID == UNCONTROLLABLE_FRENZY_ID and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
-      if wrDebug then send(srcName .. " just casted " .. (GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " on the player.") end
-      onDominateMindCast(srcName)
-
-   -- If player gets controlled by Yogg-Saron (Ulduar)
-   elseif spellID == YOGG_INSANE_ID and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
-      if wrDebug then send(srcName .. " just casted " .. (GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " on the player.") end
-      onDominateMindCast(srcName)
-
-   -- If player gets controlled by Kel'Thuzad (Naxxramas)
-   elseif spellID == CHAINS_OF_KELTHUZAD_ID and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
-      if wrDebug then send(srcName .. " just casted " .. (GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " on the player.") end
-      onDominateMindCast(srcName)
 
    -- A test case with a Paladin casting 10 minute Kings on player to simulate the Mind Control
    elseif wrDebug and spellID == 20217 and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
@@ -759,7 +757,7 @@ local function regForAllEvents()
    AWR:RegisterEvent("PLAYER_REGEN_ENABLED")
    AWR:RegisterEvent("PLAYER_REGEN_DISABLED")
    AWR:RegisterEvent("PLAYER_TALENT_UPDATE")
-   AWR:RegisterEvent("PLAYER_DIFFICULTY_CHANGED")
+   --AWR:RegisterEvent("PLAYER_DIFFICULTY_CHANGED")
 end
 
 local function unregFromAllEvents()
@@ -770,29 +768,31 @@ local function unregFromAllEvents()
    AWR:UnregisterEvent("PLAYER_REGEN_ENABLED")
    AWR:UnregisterEvent("PLAYER_REGEN_DISABLED")
    AWR:UnregisterEvent("PLAYER_TALENT_UPDATE")
-   AWR:UnregisterEvent("PLAYER_DIFFICULTY_CHANGED")
+   --AWR:UnregisterEvent("PLAYER_DIFFICULTY_CHANGED")
 end
 
 -- Checks if addon should be enabled, and enable it if isn't enabled, and disable if it should not be enabled
 local function checkIfAddonShouldBeEnabled()
    if(AWR==nil) then send("frame came nil inside function that check if this addon should be enabled, report this"); return; end
-
    updatePlayerLocalIfNeeded()
-   local reason = AWR_REASON_ADDON_IS_OFF;
+
+   local turnState = false
+   local reason = AWR_REASON_ADDON_IS_OFF
    if AWR.dbc.enabled then
       if wrDebug then
+         turnState = true
          reason = format(AWR_REASON_DEBUG_MODE_IS_ON,instanceName)
-         return true, reason
       elseif tableHasThisEntry(validInstances, instanceName) then
-         regForAllEvents()
+         turnState = true
          reason = format(AWR_REASON_INSIDE_VALID_INSTANCE,instanceName)
-         return true, reason
       else
          reason = format(AWR_REASON_NOT_INSIDE_VALID_INSTANCE)
       end
    end
-   unregFromAllEvents()
-   return false, reason
+
+   if turnState then regForAllEvents()
+   else unregFromAllEvents() end
+   return turnState, reason
 end
 
 -- Called when player leaves combat
@@ -811,9 +811,9 @@ function AWR:PLAYER_REGEN_DISABLED()
    updatePlayerClassAndSpec()
 end
 
-function AWR:PLAYER_DIFFICULTY_CHANGED()
-   checkIfAddonShouldBeEnabled()
-end
+--function AWR:PLAYER_DIFFICULTY_CHANGED()
+--   checkIfAddonShouldBeEnabled()
+--end
 
 function AWR:PLAYER_TALENT_UPDATE()
    updatePlayerClassAndSpec()
@@ -871,7 +871,7 @@ local function slashCommandSpec()
    if spec==nil then spec = "Unknown"
    else spec = upperFirstOnly(spec) end
 
-   send("Your class is " .. class .. " and your build is " .. spec .. ".")
+   send(format(AWR_SPEC_MESSAGE,class,spec))
 end
 
 -- debug
@@ -937,6 +937,11 @@ local function slashCommandChannel(channel)
    end
 
    channel = channel:upper()
+   -- Aliases
+   if channel == "S" then channel = "SAY"
+   elseif channel == "Y" then channel = "YELL"
+   elseif channel == "R" then channel = "RAID"
+   elseif channel == "P" then channel = "PARTY" end
    if tableHasThisEntry(validChannels, channel) then
       send(format(AWR_CHANGED_CURRENTLY_CHANNEL,channel))
       channelToSendMessage = channel
@@ -973,7 +978,7 @@ local function slashCommand(typed)
    elseif(cmd=="status" or cmd=="state") then slashCommandStatus()
    elseif(cmd=="version" or cmd=="ver") then slashCommandVersion()
    elseif(cmd=="spec") then slashCommandSpec()
-   elseif(cmd=="removeweapon" or cmd=="removeweapons" or cmd=="rw") then onDominateMindCast("Lady Deathwhisper",true)
+   elseif(cmd=="removeweapon" or cmd=="removeweapons" or cmd=="rw") then onDominateMindCast(AWR_TEST_BOSS,true)
    elseif(cmd=="debug") then slashCommandDebug()
    elseif(cmd=="reset") then slashCommandReset()
    elseif(cmd=="count" or cmd=="report") then slashCommandCount()
@@ -1005,7 +1010,7 @@ function AWR:ADDON_LOADED(addon)
    SLASH_AUTOMATICWEAPONREMOVAL1 = "/awr"
    SLASH_AUTOMATICWEAPONREMOVAL2 = "/automaticweaponremoval"
    SlashCmdList.AUTOMATICWEAPONREMOVAL = function(cmd) slashCommand(cmd) end
-   if wrDebug then send("remember that debug mode is " .. "|cff00ff00ON|r.") end
+   if wrDebug then send("remember that debug mode is |cff00ff00ON|r.") end
 
    self:RegisterEvent("PLAYER_ENTERING_WORLD")
    self:UnregisterEvent("ADDON_LOADED")
