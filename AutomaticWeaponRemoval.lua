@@ -733,16 +733,17 @@ end
 function AWR:COMBAT_LOG_EVENT_UNFILTERED(timestamp, event, srcGUID, srcName, srcFlags, destGUID, destName, destFlags, spellID, spellName, ...)
    if srcName ~= UnitName("player") and destName ~= UnitName("player") then return end -- The event if NOT from the player, so that is not relevant
 
-   -- If Lady cast Dominate Mind on player (ICC)
+   -- If spell from this table gets cast on player
    if tableHasThisEntry(mind_control_spells_cast, spellID) and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
       if wrDebug then send(srcName .. " just casted " .. (GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " on the player.") end
       onDominateMindCast(srcName)
 
+   -- Else if spell from this table fades from player
    elseif tableHasThisEntry(mind_control_spells_fade, spellID) and event == "SPELL_AURA_REMOVED" and destName == UnitName("player") then
       if wrDebug then send((GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " just faded from the player.") end
       onDominateMindFade()
 
-   -- A test case with a Paladin casting 10 minute Kings on player to simulate the Mind Control
+   -- A test case with a Paladin casting 10 minute Kings on player to simulate a Mind Control
    elseif wrDebug and spellID == 20217 and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
       send(srcName .. " just casted " .. (GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " on the player.")
       onDominateMindCast(srcName)
@@ -776,23 +777,23 @@ local function checkIfAddonShouldBeEnabled()
    if(AWR==nil) then send("frame came nil inside function that check if this addon should be enabled, report this"); return; end
    updatePlayerLocalIfNeeded()
 
-   local turnState = false
+   local shouldIt = false
    local reason = AWR_REASON_ADDON_IS_OFF
    if AWR.dbc.enabled then
       if wrDebug then
-         turnState = true
+         shouldIt = true
          reason = format(AWR_REASON_DEBUG_MODE_IS_ON,instanceName)
       elseif tableHasThisEntry(validInstances, instanceName) then
-         turnState = true
+         shouldIt = true
          reason = format(AWR_REASON_INSIDE_VALID_INSTANCE,instanceName)
       else
          reason = format(AWR_REASON_NOT_INSIDE_VALID_INSTANCE)
       end
    end
 
-   if turnState then regForAllEvents()
+   if shouldIt then regForAllEvents()
    else unregFromAllEvents() end
-   return turnState, reason
+   return shouldIt, reason
 end
 
 -- Called when player leaves combat
