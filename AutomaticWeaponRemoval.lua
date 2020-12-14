@@ -58,21 +58,23 @@ local removeFor = {
 -- Don't touch anything below
 local wrDebug                 = false      -- AWR debug messages
 local mind_control_spells_ids = {
-   ["DOMINATE_MIND"]          = 71289,     -- Lady's Mind Control ability (ICC)
-   ["UNCONTROLLABLE_FRENZY"]  = 70923,     -- Blood Queen's Mind Control ability (ICC)
-   ["YOGG_INSANE"]            = 63120,     -- Yogg-Saron's Mind Control ability (Ulduar)
-   ["CHAINS_OF_KELTHUZAD"]    = 28410,     -- Kel'Thuzad's Mind Control ability (Naxxramas)
+   ["LADY_DOMINATE_MIND"]            = 71289,     -- Lady's Mind Control ability (ICC)
+   ["BQ_UNCONTROLLABLE_FRENZY"]      = 70923,     -- Blood Queen's Mind Control ability (ICC)
+   ["FACELESS_HORROR_DOMINATE_MIND"] = 63713,     -- Ulduar trash mob
+   ["YOGG_INSANE"]                   = 63120,     -- Yogg-Saron's Mind Control ability (Ulduar)
+   ["CHAINS_OF_KELTHUZAD"]           = 28410,     -- Kel'Thuzad's Mind Control ability (Naxxramas)
 }
 -- Look for these spell casts
 local mind_control_spells_cast = {
-   ["DOMINATE_MIND"]         = mind_control_spells_ids["DOMINATE_MIND"],
-   ["UNCONTROLLABLE_FRENZY"] = mind_control_spells_ids["UNCONTROLLABLE_FRENZY"],
-   ["YOGG_INSANE"]           = mind_control_spells_ids["YOGG_INSANE"],
-   ["CHAINS_OF_KELTHUZAD"]   = mind_control_spells_ids["CHAINS_OF_KELTHUZAD"],
+   ["LADY_DOMINATE_MIND"]            = mind_control_spells_ids["LADY_DOMINATE_MIND"],
+   ["BQ_UNCONTROLLABLE_FRENZY"]      = mind_control_spells_ids["BQ_UNCONTROLLABLE_FRENZY"],
+   ["FACELESS_HORROR_DOMINATE_MIND"] = mind_control_spells_ids["FACELESS_HORROR_DOMINATE_MIND"],
+   ["YOGG_INSANE"]                   = mind_control_spells_ids["YOGG_INSANE"],
+   ["CHAINS_OF_KELTHUZAD"]           = mind_control_spells_ids["CHAINS_OF_KELTHUZAD"],
 }
 -- And also for these spell fades
 local mind_control_spells_fade = {
-   ["DOMINATE_MIND"]         = mind_control_spells_ids["DOMINATE_MIND"],
+   ["LADY_DOMINATE_MIND"]            = mind_control_spells_ids["LADY_DOMINATE_MIND"],
 }
 -- General spells
 local HEROISM_ID       = UnitFactionGroup("player") == "Horde" and 2825 or 32182   -- Horde = "Bloodlust" / Alliance = "Heroism"
