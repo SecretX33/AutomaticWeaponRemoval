@@ -821,7 +821,7 @@ end
 
 function AWR:PLAYER_TALENT_UPDATE()
    updatePlayerClassAndSpec()
-   if wrDebug then send("updated talents, now you are using " .. playerSpec or "Unknown") end
+   if wrDebug then send("updated talents, now you are using " .. (playerSpec or "Unknown")) end
 end
 
 function AWR:PLAYER_ENTERING_WORLD()
