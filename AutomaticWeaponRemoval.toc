@@ -2,7 +2,7 @@
 #
 ## Interface: 30300
 ## Title: AutomaticWeaponRemoval
-## Notes: Remove your weapons automatically when Lady casts Mind Control on you. No in-game options, configuration via Lua.
+## Notes: Remove (swap) your weapons automatically when Lady casts Mind Control on you. No in-game options, configuration via Lua.
 ## Author: SecretX (Freezingice @ WoW-Brasil)
 ## Version: 1.0.9.1
 ## SavedVariables: AWRDB
