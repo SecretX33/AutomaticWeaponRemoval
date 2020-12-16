@@ -4,12 +4,12 @@
 ## Title: AutomaticWeaponRemoval
 ## Notes: Remove your weapons automatically when Lady casts Mind Control on you. No in-game options, configuration via Lua.
 ## Author: SecretX (Freezingice @ WoW-Brasil)
-## Version: 1.0.9
+## Version: 1.0.9.1
 ## SavedVariables: AWRDB
 ## SavedVariablesPerCharacter: AWRDBC
 ## OptionalDeps: BugSack, !Swatter
 ## X-Category: Combat Assist
-## X-Date: 12/14/2020
+## X-Date: 12/16/2020
 
 embeds.xml
 localization.lua

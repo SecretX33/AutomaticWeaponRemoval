@@ -72,6 +72,13 @@ local mind_control_spells_cast = {
    ["YOGG_INSANE"]                   = mind_control_spells_ids["YOGG_INSANE"],
    ["CHAINS_OF_KELTHUZAD"]           = mind_control_spells_ids["CHAINS_OF_KELTHUZAD"],
 }
+local mind_control_spells_duration = {
+   [mind_control_spells_ids["LADY_DOMINATE_MIND"]]            = 12,
+   [mind_control_spells_ids["BQ_UNCONTROLLABLE_FRENZY"]]      = -1,    -- value '-1' here means infinite
+   [mind_control_spells_ids["FACELESS_HORROR_DOMINATE_MIND"]] = 20,
+   [mind_control_spells_ids["YOGG_INSANE"]]                   = -1,    -- Tecnically, it's not infinite, its duration is 1 minute but after debuff fades player will die
+   [mind_control_spells_ids["CHAINS_OF_KELTHUZAD"]]           = 20,
+}
 -- And also for these spell fades
 local mind_control_spells_fade = {
    ["LADY_DOMINATE_MIND"]            = mind_control_spells_ids["LADY_DOMINATE_MIND"],
@@ -492,17 +499,17 @@ local function getTableLength(table)
    return count
 end
 
-local function isAddonEnabledForPlayerClass()
-   if(playerClass==nil) then send("playerClass came null inside function to check if addon should be enabled for class, report this"); return; end
-
-   -- If the key is for our class and if it's value is true then return true, else return false
-   for key, value in pairs(removeFor) do
-      if string.match(key, playerClass) and value then
-         return true
-      end
-   end
-   return false
-end
+--local function isAddonEnabledForPlayerClass()
+--   if(playerClass==nil) then send("playerClass came null inside function to check if addon should be enabled for class, report this"); return; end
+--
+--   -- If the key is for our class and if it's value is true then return true, else return false
+--   for key, value in pairs(removeFor) do
+--      if string.match(key, playerClass) and value then
+--         return true
+--      end
+--   end
+--   return false
+--end
 
 local function updatePlayerLocal()  -- Update variables with player current instance info
    instanceName,_,instanceDifficultyIndex,_,_,instanceIsHeroic = GetInstanceInfo()
@@ -578,22 +585,6 @@ end
    if spellName~=nil then return spellName else return "" end
 end
 
-local function getBuffExpirationTime(unit, buff)
-   if(unit==nil or buff==nil) then return 0 end
-
-   -- /run print(select(7,UnitBuff("player",GetSpellInfo(48518)))-GetTime())
-   -- 11.402
-
-   -- "API select" pull all the remaining returns from a given function or API starting from that index, the first valid number is 1
-   -- [API_UnitBuff] index 7 is the absolute time (client time) when the buff will expire, in seconds
-
-   local now = GetTime()
-   local expirationAbsTime = select(7, UnitBuff(unit, buff))
-
-   if expirationAbsTime~=nil then return (expirationAbsTime - now) end
-   return 0
-end
-
 local function doesUnitHaveThisBuff(unit, buff)
    if(unit==nil or buff==nil) then return false end
 
@@ -610,6 +601,38 @@ local function getICCDifficultyIndexAsString(index)
    else send("Report this, unexpected value came as parameter inside function that convert difficultyIndex to the string equivalent, the value passed is \'" .. tostring(index) .. "\'.")
    end
 end ]]--
+
+local function getBuffExpirationTime(unit, buff)
+   if(unit==nil or buff==nil) then return 0 end
+
+   -- /run print(select(7,UnitBuff("player",GetSpellInfo(48518)))-GetTime())
+   -- 11.402
+
+   -- "API select" pull all the remaining returns from a given function or API starting from that index, the first valid number is 1
+   -- [API_UnitBuff] index 7 is the absolute time (client time) when the buff will expire, in seconds
+
+   local now = GetTime()
+   local expirationAbsTime = select(7, UnitBuff(unit, buff))
+
+   if expirationAbsTime~=nil then return math.max(0,(expirationAbsTime - now)) end
+   return 0
+end
+
+local function getDebuffDurationTime(spellID)
+   if spellID==nil then send("spellID came nil inside function to get debuff duration, report this"); return 0; end
+   if not is_int(spellID) then send("spellID came, but it's not an integer inside function to get debuff duration, report this, its type is " .. tostring(type(spellID))); return 0; end
+
+   for key, value in pairs(mind_control_spells_duration) do
+      if key == spellID then
+         if value == -1 then
+            return 9999
+         else
+            return value
+         end
+      end
+   end
+   return 12  -- Default value for mind control duration, should cover most mind controls
+end
 
 local function cancelAllBuffsFromPlayerInTable(buffTable)
    if buffTable==nil then send("buffTable came nil inside function to remove all buffs inside table from player, report this.");return false; end
@@ -671,8 +694,9 @@ local function removeWeapons(bossName, isTesting)
    sendAddonMessageForControlled(removedWeapons, bossName, isTesting)
 end
 
-local function onDominateMindCast(bossName, isTesting)
+local function onDominateMindCast(bossName, spellID, isTesting)
    if(bossName==nil) then bossName = AWR_LADY_NAME end
+   if(spellID==nil) then spellID = 0 end
    if(isTesting==nil) then isTesting = false end
    updatePlayerClassAndSpecIfNeeded()
 
@@ -687,14 +711,16 @@ local function onDominateMindCast(bossName, isTesting)
    if not isTesting or wrDebug then
       -- Canceling player buffs
       -- Generic buffs
-      if not isPlayerDPSPhysical() then
+      if isPlayerHealer() then
+         if(getBuffExpirationTime("player", HEROISM) < (getDebuffDurationTime(spellID) + 1)) then CancelUnitBuff("player", HEROISM) end
+      elseif isPlayerDPSSpell() then
          CancelUnitBuff("player", HEROISM)
-      end
-      if isPlayerDPSSpell() then
          CancelUnitBuff("player", DEMONIC_PACT)
       end
       -- Trinket buffs
-      cancelAllBuffsFromPlayerInTable(trinket_before)
+      if not isPlayerHealer() then
+         cancelAllBuffsFromPlayerInTable(trinket_before)
+      end
       -- Weapon enchant buffs
       cancelAllBuffsFromPlayerInTable(weapon_enchant_before)
       -- Item buffs
@@ -733,13 +759,13 @@ local function onDominateMindFade()
 end
 
 function AWR:COMBAT_LOG_EVENT_UNFILTERED(timestamp, event, srcGUID, srcName, srcFlags, destGUID, destName, destFlags, spellID, spellName, ...)
+   if spellID==nil then return end  -- If spell doesn't have an ID, it's not relevant since all mind control spells have one
    if srcName ~= UnitName("player") and destName ~= UnitName("player") then return end -- The event if NOT from the player, so that is not relevant
-   if spellID==nil then return end
 
    -- If spell from this table gets cast on player
    if tableHasThisEntry(mind_control_spells_cast, spellID) and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
       if wrDebug then send(srcName .. " just casted " .. (GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " on the player.") end
-      onDominateMindCast(srcName)
+      onDominateMindCast(srcName, spellID)
 
    -- Else if spell from this table fades from player
    elseif tableHasThisEntry(mind_control_spells_fade, spellID) and event == "SPELL_AURA_REMOVED" and destName == UnitName("player") then
@@ -749,7 +775,7 @@ function AWR:COMBAT_LOG_EVENT_UNFILTERED(timestamp, event, srcGUID, srcName, src
    -- A test case with a Paladin casting 10 minute Kings on player to simulate a Mind Control
    elseif wrDebug and spellID == 20217 and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
       send(srcName .. " just casted " .. (GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " on the player.")
-      onDominateMindCast(srcName)
+      onDominateMindCast(srcName, spellID)
    end
 end
 
@@ -785,12 +811,12 @@ local function checkIfAddonShouldBeEnabled()
    if AWR.dbc.enabled then
       if wrDebug then
          shouldIt = true
-         reason = format(AWR_REASON_DEBUG_MODE_IS_ON,instanceName)
+         reason = AWR_REASON_DEBUG_MODE_IS_ON
       elseif tableHasThisEntry(validInstances, instanceName) then
          shouldIt = true
          reason = format(AWR_REASON_INSIDE_VALID_INSTANCE,instanceName)
       else
-         reason = format(AWR_REASON_NOT_INSIDE_VALID_INSTANCE)
+         reason = AWR_REASON_NOT_INSIDE_VALID_INSTANCE
       end
    end
 
@@ -979,10 +1005,10 @@ local function slashCommand(typed)
    elseif(cmd=="toggle") then slashCommandToggleAddon()
    elseif(cmd=="on" or cmd=="enable") then slashCommandToggleAddon("on")
    elseif(cmd=="off" or cmd=="disable") then slashCommandToggleAddon("off")
-   elseif(cmd=="status" or cmd=="state") then slashCommandStatus()
+   elseif(cmd=="status" or cmd=="state" or cmd=="reason") then slashCommandStatus()
    elseif(cmd=="version" or cmd=="ver") then slashCommandVersion()
    elseif(cmd=="spec") then slashCommandSpec()
-   elseif(cmd=="removeweapon" or cmd=="removeweapons" or cmd=="rw") then onDominateMindCast(AWR_TEST_BOSS,true)
+   elseif(cmd=="removeweapon" or cmd=="removeweapons" or cmd=="rw") then onDominateMindCast(AWR_TEST_BOSS,0,true)
    elseif(cmd=="debug") then slashCommandDebug()
    elseif(cmd=="reset") then slashCommandReset()
    elseif(cmd=="count" or cmd=="report") then slashCommandCount()
