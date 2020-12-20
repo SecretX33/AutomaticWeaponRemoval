@@ -1,5 +1,6 @@
 # AutomaticWeaponRemoval
 
+* [Summary](#summary)
 * [FAQ](#faq)
 
 ## Download
