@@ -248,16 +248,15 @@ local paladin_ids = {
    ["VALIANCE_LIBRAM"]     = 67371,
    ["THREE_TRUTHS_LIBRAM"] = 67371,
 }
--- do NOT loop here, the cancel for these spells are situational
 local paladin_before = {
    ["ART_OF_WAR"]          = GetSpellInfo(paladin_ids["ART_OF_WAR"]),
-   ["AVENGING_WRATH"]      = GetSpellInfo(paladin_ids["AVENGING_WRATH"]),
    ["VENGEANCE"]           = GetSpellInfo(paladin_ids["VENGEANCE"]),
    ["VALIANCE_LIBRAM"]     = GetSpellInfo(paladin_ids["VALIANCE_LIBRAM"]),
    ["THREE_TRUTHS_LIBRAM"] = GetSpellInfo(paladin_ids["THREE_TRUTHS_LIBRAM"]),
 }
 -- do NOT loop here, the cancel for these spells are situational
-local paladin_after = {
+local paladin_special = {
+   ["AVENGING_WRATH"]   = GetSpellInfo(paladin_ids["AVENGING_WRATH"]),
    ["RIGHTEOUS_FURY"]   = GetSpellInfo(paladin_ids["RIGHTEOUS_FURY"]),
    ["DIVINE_PLEA"]      = GetSpellInfo(paladin_ids["DIVINE_PLEA"]),
    ["DIVINE_SACRIFICE"] = GetSpellInfo(paladin_ids["DIVINE_SACRIFICE"]),
@@ -546,8 +545,7 @@ local function updatePlayerClassAndSpec()
 end
 
 local function updatePlayerClassAndSpecIfNeeded()
-   if playerSpec==nil then updatePlayerSpec() end
-   if playerClassAndSpec==nil then updatePlayerClassAndSpec() end
+   if playerSpec==nil or playerClassAndSpec==nil then updatePlayerClassAndSpec() end
 end
 
 local function isPlayerDPSPhysical()
@@ -731,6 +729,9 @@ local function onDominateMindCast(bossName, spellID, isTesting)
       elseif playerClass=="DEATHKNIGHT" then
          cancelAllBuffsFromPlayerInTable(dk_before)
       elseif playerClass=="PALADIN" then
+         if getPlayerSpec()~="Holy" or (getBuffExpirationTime("player", paladin_special["AVENGING_WRATH"]) < (getDebuffDurationTime(spellID) + 1)) then
+            CancelUnitBuff("player", paladin_special["AVENGING_WRATH"])
+         end
          cancelAllBuffsFromPlayerInTable(paladin_before)
       elseif playerClass=="WARRIOR" then
          cancelAllBuffsFromPlayerInTable(warrior_before)
@@ -752,9 +753,9 @@ local function onDominateMindFade()
    updatePlayerClassAndSpecIfNeeded()
 
    if playerClass=="PALADIN" then
-      if getPlayerSpec()~="Protection" and removePaladinRFAfterControlsEnd then CancelUnitBuff("player", paladin_after["RIGHTEOUS_FURY"]) end
-      if getPlayerSpec()=="Holy" and removeDivinePleaAfterControlsEndIfHoly then CancelUnitBuff("player", paladin_after["DIVINE_PLEA"]) end
-      CancelUnitBuff("player", paladin_after["DIVINE_SACRIFICE"])
+      if getPlayerSpec()~="Protection" and removePaladinRFAfterControlsEnd then CancelUnitBuff("player", paladin_special["RIGHTEOUS_FURY"]) end
+      if getPlayerSpec()=="Holy" and removeDivinePleaAfterControlsEndIfHoly then CancelUnitBuff("player", paladin_special["DIVINE_PLEA"]) end
+      CancelUnitBuff("player", paladin_special["DIVINE_SACRIFICE"])
    end
 end
 
@@ -862,7 +863,7 @@ end
 
 -- Slash commands functions
 -- toggle, on, off
-local function slashCommandToggleAddon(state)
+local function slashToggleAddon(state)
    if state == "on" or (not AWR.dbc.enabled and state==nil) then
       AWR.dbc.enabled = true
       checkIfAddonShouldBeEnabled()
@@ -875,7 +876,7 @@ local function slashCommandToggleAddon(state)
 end
 
 -- status, state
-local function slashCommandStatus()
+local function slashStatus()
    if not AWR.dbc.enabled then
       send(AWR_REASON_ADDON_IS_OFF)
    else
@@ -884,13 +885,13 @@ local function slashCommandStatus()
 end
 
 -- version, ver
-local function slashCommandVersion()
+local function slashVersion()
    if(addonVersion==nil) then send(AWR_ADDON_STILL_LOADING); return; end
    send("version " .. addonVersion)
 end
 
 -- spec
-local function slashCommandSpec()
+local function slashSpec()
    if(playerClass==nil) then send(AWR_ADDON_STILL_LOADING); return; end
    updatePlayerClassAndSpec()
    local spec = getPlayerSpec()
@@ -905,50 +906,49 @@ local function slashCommandSpec()
 end
 
 -- debug
-local function slashCommandDebug()
+local function slashDebug()
    if not wrDebug then
       wrDebug = true
       AWR.db.debug = true
-      send("debug mode turned |cff00ff00on|r")
    else
       wrDebug = false
       AWR.db.debug = false
-      send("debug mode turned |cffff0000off|r")
    end
+   send("debug mode turned " .. (wrDebug and "|cff00ff00on|r" or "|cffff0000off|r"))
    checkIfAddonShouldBeEnabled()
 end
 
-local function slashCommandReset()
+local function slashReset()
    if not AWR.db.debug then return end
 
-   playerControlledCount = 0
+   playerControlledCount         = 0
    AWR.dbc.playercontrolledcount = 0
-   weaponsRemovedCount = 0
-   AWR.dbc.weaponsremovedcount = 0
+   weaponsRemovedCount           = 0
+   AWR.dbc.weaponsremovedcount   = 0
    send("Count variables got zeroed.")
 end
 
 -- count, report
-local function slashCommandCount()
+local function slashCount()
    send(format(AWR_REPORT_COUNT,playerControlledCount,weaponsRemovedCount))
 end
 
 -- message
-local function slashCommandMessage(message)
+local function slashMessage(message)
    if message==nil or message=="" then
       send(format(AWR_CURRENT_MESSAGE,messageToBeSentWhenControlled))
       return
    end
 
-   if message=="toggle" then
+   if message:lower()=="toggle" then
       if not sendMessageOnChatWhenControlled then message="on"
       else message="off" end
    end
-   if message=="on" then
+   if message:lower()=="on" then
       send(AWR_MESSAGE_ON)
       sendMessageOnChatWhenControlled = true
       AWR.db.sendmessageonchatwhencontrolled = sendMessageOnChatWhenControlled
-   elseif message=="off" then
+   elseif message:lower()=="off" then
       send(AWR_MESSAGE_OFF)
       sendMessageOnChatWhenControlled = false
       AWR.db.sendmessageonchatwhencontrolled = sendMessageOnChatWhenControlled
@@ -960,7 +960,7 @@ local function slashCommandMessage(message)
 end
 
 -- channel
-local function slashCommandChannel(channel)
+local function slashChannel(channel)
    if channel==nil or channel=="" then
       send(format(AWR_SELECTED_CHANNEL,channelToSendMessage))
       return
@@ -1002,18 +1002,18 @@ local function slashCommand(typed)
       sendNoPrefix(AWR_HELP7)
       sendNoPrefix(AWR_HELP8)
       sendNoPrefix(AWR_HELP9)
-   elseif(cmd=="toggle") then slashCommandToggleAddon()
-   elseif(cmd=="on" or cmd=="enable") then slashCommandToggleAddon("on")
-   elseif(cmd=="off" or cmd=="disable") then slashCommandToggleAddon("off")
-   elseif(cmd=="status" or cmd=="state" or cmd=="reason") then slashCommandStatus()
-   elseif(cmd=="version" or cmd=="ver") then slashCommandVersion()
-   elseif(cmd=="spec") then slashCommandSpec()
+   elseif(cmd=="toggle") then slashToggleAddon()
+   elseif(cmd=="on" or cmd=="enable") then slashToggleAddon("on")
+   elseif(cmd=="off" or cmd=="disable") then slashToggleAddon("off")
+   elseif(cmd=="status" or cmd=="state" or cmd=="reason") then slashStatus()
+   elseif(cmd=="version" or cmd=="ver") then slashVersion()
+   elseif(cmd=="spec") then slashSpec()
    elseif(cmd=="removeweapon" or cmd=="removeweapons" or cmd=="rw") then onDominateMindCast(AWR_TEST_BOSS,0,true)
-   elseif(cmd=="debug") then slashCommandDebug()
-   elseif(cmd=="reset") then slashCommandReset()
-   elseif(cmd=="count" or cmd=="report") then slashCommandCount()
-   elseif(cmd=="message" or cmd=="m") then slashCommandMessage(extra)
-   elseif(cmd=="channel" or cmd=="c") then slashCommandChannel(extra)
+   elseif(cmd=="debug") then slashDebug()
+   elseif(cmd=="reset") then slashReset()
+   elseif(cmd=="count" or cmd=="report") then slashCount()
+   elseif(cmd=="message" or cmd=="m") then slashMessage(extra)
+   elseif(cmd=="channel" or cmd=="c") then slashChannel(extra)
    end
 end
 -- End of slash commands function

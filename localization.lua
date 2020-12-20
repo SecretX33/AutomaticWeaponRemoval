@@ -1,5 +1,5 @@
 -- AutomaticWeaponRemoval Localization File
--- Version 1.0.9.1
+-- Version 1.0.9.2
 
 AWR_ADDON_PREFIX = "|cff2f6af5AWR:|r "
 AWR_ADDON_STILL_LOADING = "Try again later, addon still loading..."
