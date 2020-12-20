@@ -7,7 +7,7 @@
 
 You can download the lastest version by [clicking here](https://github.com/SecretX33/AutomaticWeaponRemoval/releases/latest/download/AutomaticWeaponRemoval.zip). 
 
-If you want to download an earlier version of the addon, you can do it by checking the release page [here](https://github.com/SecretX33/AutomaticWeaponRemoval/releases).
+OR if you want to download an earlier version of the addon, you can do it by checking the release page [here](https://github.com/SecretX33/AutomaticWeaponRemoval/releases).
 
 ## Summary
 
