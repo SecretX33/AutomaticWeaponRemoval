@@ -1069,7 +1069,7 @@ end
 -- Called when player enters combat
 -- Used here to double check if we have what spec player is, and if not then we call getPlayerSpec to get what spec player is beforehand, yet another "just in case" code that if lady casts dominate mind addon maybe won't have time to query what class player is before the control affects the player
 function AWR:PLAYER_REGEN_DISABLED()
-   updatePlayerClassAndSpec()
+   updatePlayerClassAndSpecIfNeeded()
 end
 
 --function AWR:PLAYER_DIFFICULTY_CHANGED()
