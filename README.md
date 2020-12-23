@@ -15,7 +15,7 @@ This addon is made for World of Warcraft 3.3.5a
 
 This addon remove (swap) your weapons automatically if you are melee and get controlled by a variety of bosses, like Lady Deathwhisper, and a lot more, like removing Paladin's RF buff if you are not a tank.
 
-No interface, most configs can be done by just using the slash commands, all configs related to classes and specs can be done in the Lua file.
+Configs are done via interface or slash commands.
 
 ------------
 
@@ -67,9 +67,7 @@ No interface, most configs can be done by just using the slash commands, all con
 
 Issues can be reported via the Github [issue tracker](https://github.com/SecretX33/AutomaticWeaponRemoval/issues).
 
-Please take the time to review existing issues before submitting your own to
-prevent duplicates. Incorrect or poorly formed
-reports are wasteful and are subject to deletion.
+Please take the time to review existing issues before submitting your own to prevent duplicates. Incorrect or poorly formed reports are wasteful and are subject to deletion.
 
 ## Copyright
 
