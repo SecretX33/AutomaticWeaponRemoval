@@ -1,59 +1,295 @@
 local AWR = CreateFrame("frame")
 
--- Configurations
 local sendMessageOnChatWhenControlled       = true     -- default is true
 local channelToSendMessage                  = "YELL"   -- valid options are SAY, YELL, RAID, PARTY
 local messageToBeSentWhenControlled         = "I got controlled, CC me NOW!!!"
 local showAddonMessageForWeaponRemoval      = true     -- default is true
 
-local removeOnlyBowIfHunter                  = false    -- default is false
-local removePaladinRFAfterControlsEnd        = true     -- default is true, the addon won't remove RF if player is protection paladin even if this is set "true"
-local removeDivinePleaAfterControlsEndIfHoly = true     -- default is true, the idea is to be able to fully heal someone (or yourself) after dominate mind fades because usually you are low on HP then that happens, so be able to heal 100% is better than 50%
+-- Class Options
+local classOptions = {
+   ["removeOnlyBowIfHunter"] = false,                  -- default is false
+   ["removePaladinRFAfterControlsEnd"] = true,         -- default is true, the addon won't remove RF if player is protection paladin even if this is set "true"
+   ["removeDivinePleaAfterControlsEndIfHoly"] = true,  -- default is true, the idea is to be able to fully heal someone (or yourself) after dominate mind fades because usually you are low on HP then that happens, so be able to heal 100% is better than 50%
+}
+-- Before mind control
+local classOptionsListBefore = {
+   ["removeOnlyBowIfHunter"] = "Remove only bow from Hunter",
+}
+-- After mind control
+local classOptionsListAfter = {
+   ["removePaladinRFAfterControlsEnd"] = "Cancel Righteous Fury from Paladin if NOT a tank",
+   ["removeDivinePleaAfterControlsEndIfHoly"] = "Cancel Divine Plea from Holy Paladin",
+}
 
+-- Global Default Options
 local removeFor = {
    -- Hunter
-   ["HUNTER_BeastMastery"] = true,       -- default is true
-   ["HUNTER_Marksmanship"] = true,       -- default is true
-   ["HUNTER_Survival"]     = true,       -- default is true
+   ["HUNTER_BeastMastery"] = true,
+   ["HUNTER_Marksmanship"] = true,
+   ["HUNTER_Survival"]     = true,
    -- Death Knight
-   ["DEATHKNIGHT_Blood"]   = true,       -- default is true
-   ["DEATHKNIGHT_Frost"]   = true,       -- default is true
-   ["DEATHKNIGHT_Unholy"]  = true,       -- default is true
+   ["DEATHKNIGHT_Blood"]   = true,
+   ["DEATHKNIGHT_Frost"]   = true,
+   ["DEATHKNIGHT_Unholy"]  = true,
    -- Paladin
-   ["PALADIN_Holy"]        = false,      -- default is false
-   ["PALADIN_Protection"]  = true,       -- default is true
-   ["PALADIN_Retribution"] = true,       -- default is true
+   ["PALADIN_Holy"]        = false,
+   ["PALADIN_Protection"]  = true,
+   ["PALADIN_Retribution"] = true,
    -- Warrior
-   ["WARRIOR_Arms"]        = true,       -- default is true
-   ["WARRIOR_Fury"]        = true,       -- default is true
-   ["WARRIOR_Protection"]  = true,       -- default is true
+   ["WARRIOR_Arms"]        = true,
+   ["WARRIOR_Fury"]        = true,
+   ["WARRIOR_Protection"]  = true,
    -- Druid
-   ["DRUID_Balance"]       = false,      -- default is false
-   ["DRUID_Feral"]         = true,       -- default is true
-   ["DRUID_Restoration"]   = false,      -- default is false
+   ["DRUID_Balance"]       = false,
+   ["DRUID_Feral"]         = true,
+   ["DRUID_Restoration"]   = false,
    -- Rogue
-   ["ROGUE_Assassination"] = true,       -- default is true
-   ["ROGUE_Combat"]        = true,       -- default is true
-   ["ROGUE_Subtlety"]      = true,       -- default is true
+   ["ROGUE_Assassination"] = true,
+   ["ROGUE_Combat"]        = true,
+   ["ROGUE_Subtlety"]      = true,
    -- Shaman
-   ["SHAMAN_Elemental"]    = false,      -- default is false
-   ["SHAMAN_Enhancement"]  = true,       -- default is true
-   ["SHAMAN_Restoration"]  = false,      -- default is false
+   ["SHAMAN_Elemental"]    = false,
+   ["SHAMAN_Enhancement"]  = true,
+   ["SHAMAN_Restoration"]  = false,
    -- Priest
-   ["PRIEST_Discipline"]   = false,      -- default is false
-   ["PRIEST_Holy"]         = false,      -- default is false
-   ["PRIEST_Shadow"]       = false,      -- default is false
+   ["PRIEST_Discipline"]   = false,
+   ["PRIEST_Holy"]         = false,
+   ["PRIEST_Shadow"]       = false,
    -- Mage
-   ["MAGE_Arcane"]         = false,      -- default is false
-   ["MAGE_Fire"]           = false,      -- default is false
-   ["MAGE_Frost"]          = false,      -- default is false
+   ["MAGE_Arcane"]         = false,
+   ["MAGE_Fire"]           = false,
+   ["MAGE_Frost"]          = false,
    -- Warlock
-   ["WARLOCK_Affliction"]  = false,      -- default is false
-   ["WARLOCK_Demonology"]  = false,      -- default is false
-   ["WARLOCK_Destruction"] = false,      -- default is false
+   ["WARLOCK_Affliction"]  = false,
+   ["WARLOCK_Demonology"]  = false,
+   ["WARLOCK_Destruction"] = false,
 }
--- End of Configurations
 
+local specs = {
+   -- Hunter
+   hunter = {
+      ["BeastMastery"] = "Beast Mastery",
+      ["Marksmanship"] = "Marksmanship",
+      ["Survival"] = "Survival",
+   },
+   deathknight = {
+      ["Blood"] = "Blood",
+      ["Frost"] = "Frost",
+      ["Unholy"] = "Unholy",
+   },
+   paladin = {
+      ["Holy"] = "Holy",
+      ["Protection"] = "Protection",
+      ["Retribution"] = "Retribution",
+   },
+   warrior = {
+      ["Arms"] = "Arms",
+      ["Fury"] = "Fury",
+      ["Protection"] = "Protection",
+   },
+   druid = {
+      ["Balance"] = "Balance",
+      ["Feral"] = "Feral Combat",
+      ["Restoration"] = "Restoration",
+   },
+   rogue = {
+      ["Assassination"] = "Assassination",
+      ["Combat"] = "Combat",
+      ["Subtlety"] = "Subtlety",
+   },
+   shaman = {
+      ["Elemental"] = "Elemental",
+      ["Enhancement"] = "Enhancement",
+      ["Restoration"] = "Restoration",
+   },
+   priest = {
+      ["Discipline"] = "Discipline",
+      ["Holy"] = "Holy",
+      ["Shadow"] = "Shadow",
+   },
+   mage = {
+      ["Arcane"] = "Arcane",
+      ["Fire"] = "Fire",
+      ["Frost"] = "Frost",
+   },
+   warlock = {
+      ["Affliction"] = "Affliction",
+      ["Demonology"] = "Demonology",
+      ["Destruction"] = "Destruction",
+   },
+}
+
+local validChannels      = {"SAY", "YELL", "RAID", "PARTY"}
+local validInstances     = {"Icecrown Citadel", "Ulduar", "Naxxramas"}
+local dpsPhysicalClasses = {"HUNTER", "DEATHKNIGHT", "PALADIN_Protection", "PALADIN_Retribution", "WARRIOR", "DRUID_Feral", "ROGUE", "SHAMAN_Enhancement"}
+local dpsSpellClasses    = {"DRUID_Balance","SHAMAN_Elemental","PRIEST_Shadow","MAGE","WARLOCK"}
+local healerClasses      = {"PALADIN_Holy","DRUID_Restoration","SHAMAN_Restoration","PRIEST_Discipline","PRIEST_Holy"}
+
+--[[ Option table ]]--
+local optionsFrameModel = {
+   name = "AutomaticWeaponRemoval",
+   handler = AWR,
+   type = "group",
+   args = {
+      enable = {
+         type = "toggle",
+         name = "Enable weapon removal",
+         desc = "If unchecked, AWR will disable itself.",
+         get = "IsAWREnabled",
+         set = "ToggleEnable",
+         width = "full",
+         order = 0,
+      },
+      enablemessage = {
+         type = "toggle",
+         name = "Send message when controlled",
+         desc = "If unchecked, you won't say anything when you get mind controlled.",
+         get = "IsMessageEnabled",
+         set = "ToggleEnableMessage",
+         width = "double",
+         order = 1,
+      },
+      channel = {
+         type = "select",
+         name = "Channel",
+         desc = "Channel where the message will be sent.",
+         values = validChannels,
+         get = "GetChannel",
+         set = "SetChannel",
+         style = "dropdown",
+         order = 2,
+      },
+      message = {
+         type = "input",
+         name = "Message",
+         desc = "Message that will be send when you get mind controlled.",
+         set = "SetMessage",
+         get = "GetMessage",
+         width = "full",
+         order = 3,
+      },
+      desc1 = {
+         type = "header",
+         name = "Class Options",
+         order = 4,
+      },
+      classoptionsbefore = {
+         type = "multiselect",
+         name = "Before mind control",
+         values = classOptionsListBefore,
+         tristate = false,
+         get = "GetClassOption",
+         set = "SetClassOption",
+         width = "full",
+         order = 5,
+      },
+      classoptionsafter = {
+         type = "multiselect",
+         name = "After mind control",
+         values = classOptionsListAfter,
+         tristate = false,
+         get = "GetClassOption",
+         set = "SetClassOption",
+         width = "full",
+         order = 6,
+      },
+      desc2 = {
+         type = "header",
+         name = "Remove weapons for",
+         order = 7,
+      },
+      hunter = {
+         type = "multiselect",
+         name = "Hunter",
+         values = specs.hunter,
+         tristate = false,
+         set = "SetSpecState",
+         get = "GetSpecState",
+         order = 8,
+      },
+      deathknight = {
+         type = "multiselect",
+         name = "Death Knight",
+         values = specs.deathknight,
+         tristate = false,
+         set = "SetSpecState",
+         get = "GetSpecState",
+         order = 9,
+      },
+      paladin = {
+         type = "multiselect",
+         name = "Paladin",
+         values = specs.paladin,
+         tristate = false,
+         set = "SetSpecState",
+         get = "GetSpecState",
+         order = 10,
+      },
+      warrior = {
+         type = "multiselect",
+         name = "Warrior",
+         values = specs.warrior,
+         tristate = false,
+         set = "SetSpecState",
+         get = "GetSpecState",
+         order = 11,
+      },
+      druid = {
+         type = "multiselect",
+         name = "Druid",
+         values = specs.druid,
+         tristate = false,
+         set = "SetSpecState",
+         get = "GetSpecState",
+         order = 12,
+      },
+      rogue = {
+         type = "multiselect",
+         name = "Rogue",
+         values = specs.rogue,
+         tristate = false,
+         set = "SetSpecState",
+         get = "GetSpecState",
+         order = 13,
+      },
+      shaman = {
+         type = "multiselect",
+         name = "Shaman",
+         values = specs.shaman,
+         tristate = false,
+         set = "SetSpecState",
+         get = "GetSpecState",
+         order = 14,
+      },
+      priest = {
+         type = "multiselect",
+         name = "Priest",
+         values = specs.priest,
+         tristate = false,
+         set = "SetSpecState",
+         get = "GetSpecState",
+         order = 15,
+      },
+      mage = {
+         type = "multiselect",
+         name = "Mage",
+         values = specs.mage,
+         tristate = false,
+         set = "SetSpecState",
+         get = "GetSpecState",
+         order = 16,
+      },
+      warlock = {
+         type = "multiselect",
+         name = "Warlock",
+         values = specs.warlock,
+         tristate = false,
+         set = "SetSpecState",
+         get = "GetSpecState",
+         order = 17,
+      },
+   },
+}
 
 -- Don't touch anything below
 local wrDebug                 = false      -- AWR debug messages
@@ -389,12 +625,6 @@ local warlock_before = {
    ["BACKDRAFT"]       = GetSpellInfo(warlock_ids["BACKDRAFT"]),
 }
 
-local validChannels      = {"SAY", "YELL", "RAID", "PARTY"}
-local validInstances     = {"Icecrown Citadel", "Ulduar", "Naxxramas"}
-local dpsPhysicalClasses = {"HUNTER", "DEATHKNIGHT", "PALADIN_Protection", "PALADIN_Retribution", "WARRIOR", "DRUID_Feral", "ROGUE", "SHAMAN_Enhancement"}
-local dpsSpellClasses    = {"DRUID_Balance","SHAMAN_Elemental","PRIEST_Shadow","MAGE","WARLOCK"}
-local healerClasses      = {"PALADIN_Holy","DRUID_Restoration","SHAMAN_Restoration","PRIEST_Discipline","PRIEST_Holy"}
-
 local playerClass
 local playerSpec
 local playerClassAndSpec
@@ -685,7 +915,7 @@ local function removeWeapons(bossName, isTesting)
       end
       if not isTesting and (GetTime() > (addedWeaponsCountTime + 5)) then
          weaponsRemovedCount = weaponsRemovedCount + 1
-         AWR.dbc.weaponsremovedcount = weaponsRemovedCount
+         AWR.dbc.weaponsRemovedCount = weaponsRemovedCount
          addedWeaponsCountTime = GetTime()
       end
    elseif wrDebug then send("class is not selected for weapon removal.") end
@@ -702,7 +932,7 @@ local function onDominateMindCast(bossName, spellID, isTesting)
    sayMessageOnChatForControlled(isTesting)
    if not isTesting and (GetTime() > (addedPlayerCountTime + 5)) then
       playerControlledCount = playerControlledCount + 1
-      AWR.dbc.playercontrolledcount = playerControlledCount
+      AWR.dbc.playerControlledCount = playerControlledCount
       addedPlayerCountTime = GetTime()
    end
 
@@ -829,7 +1059,7 @@ end
 -- Called when player leaves combat
 -- Used to zero all variables so the addon logic knows that, when player enters combat again, it's a new fight against a new enemy
 function AWR:PLAYER_REGEN_ENABLED()
-   if self.db.enabled then
+   if self.dbc.enabled then
       if wrDebug then send("Addon variables got zeroed because player leave combat.") end
       sentChatMessageTime  = 0
       sentAddonMessageTime = 0
@@ -864,15 +1094,13 @@ end
 -- Slash commands functions
 -- toggle, on, off
 local function slashToggleAddon(state)
-   if state == "on" or (not AWR.dbc.enabled and state==nil) then
+   if state or (not AWR.dbc.enabled and state==nil)  then
       AWR.dbc.enabled = true
-      checkIfAddonShouldBeEnabled()
-      send("|cff00ff00on|r")
-   elseif state == "off" or (AWR.dbc.enabled and state==nil) then
+   elseif not state or (AWR.dbc.enabled and state==nil) then
       AWR.dbc.enabled = false
-      checkIfAddonShouldBeEnabled()
-      send("|cffff0000off|r")
    end
+   checkIfAddonShouldBeEnabled()
+   send(AWR.dbc.enabled and "|cff00ff00on|r" or "|cffff0000off|r")
 end
 
 -- status, state
@@ -922,9 +1150,9 @@ local function slashReset()
    if not AWR.db.debug then return end
 
    playerControlledCount         = 0
-   AWR.dbc.playercontrolledcount = 0
+   AWR.dbc.playerControlledCount = 0
    weaponsRemovedCount           = 0
-   AWR.dbc.weaponsremovedcount   = 0
+   AWR.dbc.weaponsRemovedCount   = 0
    send("Count variables got zeroed.")
 end
 
@@ -947,15 +1175,13 @@ local function slashMessage(message)
    if message:lower()=="on" then
       send(AWR_MESSAGE_ON)
       sendMessageOnChatWhenControlled = true
-      AWR.db.sendmessageonchatwhencontrolled = sendMessageOnChatWhenControlled
+      AWR.db.sendMessageOnChatWhenControlled = sendMessageOnChatWhenControlled
    elseif message:lower()=="off" then
       send(AWR_MESSAGE_OFF)
       sendMessageOnChatWhenControlled = false
-      AWR.db.sendmessageonchatwhencontrolled = sendMessageOnChatWhenControlled
+      AWR.db.sendMessageOnChatWhenControlled = sendMessageOnChatWhenControlled
    else
-      messageToBeSentWhenControlled = message
-      AWR.db.messagetobesentwhencontrolled = messageToBeSentWhenControlled
-      send(format(AWR_CHANGED_SAY_MESSAGE,messageToBeSentWhenControlled))
+      AWR:SetMessage(nil,message)
    end
 end
 
@@ -975,7 +1201,7 @@ local function slashChannel(channel)
    if tableHasThisEntry(validChannels, channel) then
       send(format(AWR_CHANGED_CURRENTLY_CHANNEL,channel))
       channelToSendMessage = channel
-      AWR.db.channeltosendmessage = channelToSendMessage
+      AWR.db.channelToSendMessage = channelToSendMessage
    else
       local str = ""
       local validChannelsLength = getTableLength(validChannels)
@@ -1003,8 +1229,8 @@ local function slashCommand(typed)
       sendNoPrefix(AWR_HELP8)
       sendNoPrefix(AWR_HELP9)
    elseif(cmd=="toggle") then slashToggleAddon()
-   elseif(cmd=="on" or cmd=="enable") then slashToggleAddon("on")
-   elseif(cmd=="off" or cmd=="disable") then slashToggleAddon("off")
+   elseif(cmd=="on" or cmd=="enable") then slashToggleAddon(true)
+   elseif(cmd=="off" or cmd=="disable") then slashToggleAddon(false)
    elseif(cmd=="status" or cmd=="state" or cmd=="reason") then slashStatus()
    elseif(cmd=="version" or cmd=="ver") then slashVersion()
    elseif(cmd=="spec") then slashSpec()
@@ -1018,25 +1244,125 @@ local function slashCommand(typed)
 end
 -- End of slash commands function
 
+-- Interface functions
+function AWR:IsAWREnabled(info)
+   return self.dbc.enabled
+end
+
+function AWR:ToggleEnable(info, newValue)
+   slashToggleAddon(newValue)
+end
+
+function AWR:IsMessageEnabled(info)
+   return sendMessageOnChatWhenControlled
+end
+
+function AWR:ToggleEnableMessage(info, newValue)
+   send(newValue and AWR_MESSAGE_ON or AWR_MESSAGE_OFF)
+   sendMessageOnChatWhenControlled = newValue
+   self.db.sendMessageOnChatWhenControlled = newValue
+end
+
+function AWR:GetMessage(info)
+   return messageToBeSentWhenControlled
+end
+
+function AWR:SetMessage(info, newMessage)
+   messageToBeSentWhenControlled = newMessage
+   self.db.messageToBeSentWhenControlled = newMessage
+   send(format(AWR_CHANGED_SAY_MESSAGE, newMessage))
+end
+
+function AWR:GetChannel(info)
+   for index, channel in ipairs(validChannels) do
+      if channel == channelToSendMessage then return index end
+   end
+end
+
+function AWR:SetChannel(info, newChannel)
+   newChannel = validChannels[newChannel]
+   channelToSendMessage = newChannel
+   self.db.newChannel = newChannel
+   send(format(AWR_CHANGED_CURRENTLY_CHANNEL,newChannel))
+end
+
+function AWR:GetClassOption(info, option)
+   return classOptions[option]
+end
+
+function AWR:SetClassOption(info, option, newValue)
+   if wrDebug then send("option is " .. option .. " and newvalue is " .. tostring(newValue)) end
+   classOptions[option] = newValue
+   self.db.classOptions = classOptions
+end
+
+function AWR:GetSpecState(info, spec)
+   local class = info[#info]:upper()
+   return removeFor[format("%s_%s",class,spec)]
+end
+
+function AWR:SetSpecState(info, spec, newValue)
+   local class = info[#info]:upper()
+   removeFor[format("%s_%s",class,spec)] = newValue
+   self.db.removeFor = removeFor
+
+   for k,v in pairs(specs[class:lower()]) do
+      if k == spec then
+         spec = v
+         break
+      end
+   end
+   class = (class=="DEATHKNIGHT") and "Death Knight" or upperFirstOnly(class)
+   local msg = newValue and AWR_SPEC_TOGGLED_ON_MESSAGE or AWR_SPEC_TOGGLED_OFF_MESSAGE
+   send(format(msg,spec,class))
+end
+-- End of Interface functions
+
+function AWR:LoadDefaultDBValues()
+   -- Global Saved Vars
+   if self.db.removeFor                       == nil then self.db.removeFor                       = removeFor end
+   if self.db.sendMessageOnChatWhenControlled == nil then self.db.sendMessageOnChatWhenControlled = sendMessageOnChatWhenControlled end
+   if self.db.messageToBeSentWhenControlled   == nil then self.db.messageToBeSentWhenControlled   = messageToBeSentWhenControlled end
+   if self.db.channelToSendMessage            == nil then self.db.channelToSendMessage            = channelToSendMessage end
+   if self.db.classOptions                    == nil then self.db.classOptions                    = classOptions
+   else
+      for k,v in pairs(classOptions) do
+         if self.db.classOptions[k]==nil then self.db.classOptions[k] = v end
+      end
+   end
+   -- Per Char Saved Vars
+   if self.dbc.playerControlledCount          == nil then self.dbc.playerControlledCount          = playerControlledCount end
+   if self.dbc.weaponsRemovedCount            == nil then self.dbc.weaponsRemovedCount            = weaponsRemovedCount end
+end
+
 function AWR:ADDON_LOADED(addon)
    if addon ~= "AutomaticWeaponRemoval" then return end
 
-   AWRDB = AWRDB or { enabled = true }
+   AWRDB = AWRDB or { }
    AWRDBC = AWRDBC or { enabled = true }
    self.db = AWRDB
    self.dbc = AWRDBC
 
    playerClass = select(2,UnitClass("player"))  -- Get player class
 
-   addonVersion = GetAddOnMetadata("AutomaticWeaponRemoval", "Version")
-   groupTalentsLib = LibStub("LibGroupTalents-1.0")   -- Importing LibGroupTalents so I can use it later by using groupTalentsLib variable
    -- Loading variables
+   self:LoadDefaultDBValues()
    wrDebug = self.db.debug or wrDebug
-   playerControlledCount = self.dbc.playercontrolledcount or playerControlledCount
-   weaponsRemovedCount = self.dbc.weaponsremovedcount or weaponsRemovedCount
-   sendMessageOnChatWhenControlled = self.db.sendmessageonchatwhencontrolled or sendMessageOnChatWhenControlled
-   messageToBeSentWhenControlled = self.db.messagetobesentwhencontrolled or messageToBeSentWhenControlled
-   channelToSendMessage = self.db.channeltosendmessage or channelToSendMessage
+   removeFor = self.db.removeFor
+   sendMessageOnChatWhenControlled = self.db.sendMessageOnChatWhenControlled
+   messageToBeSentWhenControlled = self.db.messageToBeSentWhenControlled
+   channelToSendMessage = self.db.channelToSendMessage
+   classOptions = self.db.classOptions
+   playerControlledCount = self.dbc.playerControlledCount
+   weaponsRemovedCount = self.dbc.weaponsRemovedCount
+
+   addonVersion = GetAddOnMetadata("AutomaticWeaponRemoval", "Version")
+   groupTalentsLib = LibStub("LibGroupTalents-1.0")
+
+   -- Loading Config Frame
+   LibStub("AceConfig-3.0"):RegisterOptionsTable("AutomaticWeaponRemoval", optionsFrameModel)
+   self.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("AutomaticWeaponRemoval")
+
    SLASH_AUTOMATICWEAPONREMOVAL1 = "/awr"
    SLASH_AUTOMATICWEAPONREMOVAL2 = "/automaticweaponremoval"
    SlashCmdList.AUTOMATICWEAPONREMOVAL = function(cmd) slashCommand(cmd) end

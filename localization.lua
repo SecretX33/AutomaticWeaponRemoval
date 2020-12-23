@@ -1,5 +1,5 @@
 -- AutomaticWeaponRemoval Localization File
--- Version 1.0.9.2
+-- Version 1.1
 
 AWR_ADDON_PREFIX = "|cff2f6af5AWR:|r "
 AWR_ADDON_STILL_LOADING = "Try again later, addon still loading..."
@@ -13,9 +13,6 @@ AWR_HELP6 = "|cff2f6af5/awr count:|r Show how many you have been controlled."
 AWR_HELP7 = "|cff2f6af5/awr spec:|r Show what class and spec."
 AWR_HELP8 = "|cff2f6af5/awr status:|r Show if addon is on/off and why, useful to double check current addon state."
 AWR_HELP9 = "|cff2f6af5/awr version:|r Show addon version."
---AWR_HELP2 = "Try typing |cffffaf24/awr toggle|r to toggle the addon state ON or OFF, you can also use |cff6fe014/awr on|r or |cffff3838/awr off|r."
---AWR_HELP3 = "You can doublecheck if addon is turned on or off with the reason by typing |cffdde813/awr status|r. Also, you can simulate a dominate mind by typing |cff26fff1/awr removeweapon|r."
---AWR_HELP4 = "See how many times you have been controlled with |cffba69f5/awr count|r. Check addon version with |cff55e6a9/awr version|r."
 
 AWR_TEST_BOSS = "Test Boss"
 AWR_LADY_NAME = "Lady Deathwhisper"
@@ -35,6 +32,9 @@ AWR_CURRENT_MESSAGE = "current message is: |cffbffd31%s|r"
 AWR_CHANGED_SAY_MESSAGE = "you will now say |cff48df28%s|r when you get controlled."
 AWR_MESSAGE_ON = "turned messages |cff00ff00on|r."
 AWR_MESSAGE_OFF = "turned messages |cffff0000off|r."
+
+AWR_SPEC_TOGGLED_ON_MESSAGE = "Turned |cff00ff00on|r Remove Weapons for %s %s."               -- spec, class
+AWR_SPEC_TOGGLED_OFF_MESSAGE = "Turned |cffff0000off|r Remove Weapons for %s %s." -- spec, class
 
 AWR_SELECTED_CHANNEL = "select channel is: |cfff84d13%s|r"
 AWR_CHANGED_CURRENTLY_CHANNEL = "you will now send messages on |cffff7631%s|r."

@@ -61,7 +61,7 @@ No interface, most configs can be done by just using the slash commands, all con
 
 **Q:** Your addon is awesome, but I really miss an UI (User Interface), couldn't you add one?
 
-**A:** Yes and no. I am by no means a "professional add-on developer" of some sort, I made this addon for fun, and to help my guild. I don't know how to make an add-on interface, but I can research it, if you guys really want one let me know, and I'll make one.
+**A:** Added with update 1.1, you're welcome.
 
 ## Reporting issues
 
