@@ -1,3 +1,10 @@
+--[[------------------------------------------------------------+
+|   AutomaticWeaponRemoval                                      |
+|   --> Automatic weapon removal when mind controlled           |
+|   Author: SecretX (Freezingice @ WoW Brasil)                  |
+|   Contact: notyetmidnight@gmail.com                           |
++--------------------------------------------------------------]]
+
 local AWR = CreateFrame("frame")
 
 local sendMessageOnChatWhenControlled       = true     -- default is true
@@ -13,7 +20,7 @@ local classOptions = {
 }
 -- Before mind control
 local classOptionsListBefore = {
-   ["removeOnlyBowIfHunter"] = "Remove only bow from Hunter",
+   ["removeOnlyBowIfHunter"] = "Unequip ONLY bow from Hunter",
 }
 -- After mind control
 local classOptionsListAfter = {
@@ -21,7 +28,7 @@ local classOptionsListAfter = {
    ["removeDivinePleaAfterControlsEndIfHoly"] = "Cancel Divine Plea from Holy Paladin",
 }
 
--- Global Default Options
+-- Global Weapon Removal Options
 local removeFor = {
    -- Hunter
    ["HUNTER_BeastMastery"] = true,
@@ -66,7 +73,6 @@ local removeFor = {
 }
 
 local specs = {
-   -- Hunter
    hunter = {
       ["BeastMastery"] = "Beast Mastery",
       ["Marksmanship"] = "Marksmanship",
@@ -291,7 +297,6 @@ local optionsFrameModel = {
    },
 }
 
--- Don't touch anything below
 local wrDebug                 = false      -- AWR debug messages
 local mind_control_spells_ids = {
    ["LADY_DOMINATE_MIND"]            = 71289,     -- Lady's Mind Control ability (ICC)
