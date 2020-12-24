@@ -875,17 +875,13 @@ local function cancelAllBuffsFromPlayerInTable(buffTable)
    end
 end
 
-local function sendAddonMessageForControlled(removedWeapons, bossName, isTesting)
+local function sendAddonMessageForControlled(message, removedWeapons, bossName, isTesting)
    if(removedWeapons==nil) then send("removedWeapons boolean came nil inside function that send addon message, report this.");return; end
    if(bossName==nil) then bossName = AWR_LADY_NAME end
    if(isTesting==nil) then isTesting = false end
 
    if showAddonMessageForWeaponRemoval and (GetTime() > (sentAddonMessageTime + 5)) then -- GetTime comparison here is preventing sending same message two times in a row, a "just in case" check
-      if removedWeapons then
-         send(format(AWR_ADDON_MESSAGE_FOR_CONTROL_AND_WEAPON_REMOVAL,bossName))
-      else
-         send(format(AWR_ADDON_MESSAGE_FOR_CONTROL,bossName))
-      end
+      send(format(message,bossName))
       sentAddonMessageTime = GetTime()
    end
 end
@@ -905,10 +901,24 @@ local function removeWeapons(bossName, isTesting)
    if(isTesting==nil) then isTesting = false end
    updatePlayerClassAndSpecIfNeeded()
 
+   local bagSpace, bagSpaceNeeded = 0, 0
    local removedWeapons = false
+
    if removeFor[playerClassAndSpec] then
+      for i=0,(NUM_BAG_SLOTS-1) do bagSpace = bagSpace + GetContainerNumFreeSlots(i) end
+
+      if (playerClass~="HUNTER" or not classOptions["removeOnlyBowIfHunter"]) then
+         -- Player have something equipped in his Main Hand (slot 16)
+         if GetInventoryItemLink("player", 16) then bagSpaceNeeded = bagSpaceNeeded + 1 end
+         -- Player have something equipped in his Off Hand (slot 17)
+         if GetInventoryItemLink("player", 17) then bagSpaceNeeded = bagSpaceNeeded + 1 end
+      end
+      -- Player is Hunter and have something equipped in his Ranged (slot 18)
+      if playerClass=="HUNTER" and GetInventoryItemLink("player", 18) then bagSpaceNeeded = bagSpaceNeeded + 1 end
+      if wrDebug then send("bagSpace is " .. bagSpace .. " and bagSpaceNeeded is " .. tostring(bagSpaceNeeded)) end
+
       removedWeapons = true
-      if playerClass~="HUNTER" or not removeOnlyBowIfHunter then
+      if playerClass~="HUNTER" or not classOptions["removeOnlyBowIfHunter"] then
          PickupInventoryItem(16)
          PutItemInBackpack()
          PickupInventoryItem(17)
@@ -924,7 +934,18 @@ local function removeWeapons(bossName, isTesting)
          addedWeaponsCountTime = GetTime()
       end
    elseif wrDebug then send("class is not selected for weapon removal.") end
-   sendAddonMessageForControlled(removedWeapons, bossName, isTesting)
+
+   local message = AWR_ADDON_MESSAGE_FOR_CONTROL
+   if removedWeapons then
+      if bagSpace == 0 then
+         message = AWR_ADDON_MESSAGE_FOR_CONTROL_AND_WEAPON_REMOVAL_BUT_BAG_IS_FULL
+      elseif bagSpaceNeeded > bagSpace then
+         message = AWR_ADDON_MESSAGE_FOR_CONTROL_AND_WEAPON_REMOVAL_BUT_BAG_WAS_PARTIALLY_FULL
+      else
+         message = AWR_ADDON_MESSAGE_FOR_CONTROL_AND_WEAPON_REMOVAL
+      end
+   end
+   sendAddonMessageForControlled(message, removedWeapons, bossName, isTesting)
 end
 
 local function onDominateMindCast(bossName, spellID, isTesting)
@@ -988,8 +1009,8 @@ local function onDominateMindFade()
    updatePlayerClassAndSpecIfNeeded()
 
    if playerClass=="PALADIN" then
-      if getPlayerSpec()~="Protection" and removePaladinRFAfterControlsEnd then CancelUnitBuff("player", paladin_special["RIGHTEOUS_FURY"]) end
-      if getPlayerSpec()=="Holy" and removeDivinePleaAfterControlsEndIfHoly then CancelUnitBuff("player", paladin_special["DIVINE_PLEA"]) end
+      if getPlayerSpec()~="Protection" and classOptions["removePaladinRFAfterControlsEnd"] then CancelUnitBuff("player", paladin_special["RIGHTEOUS_FURY"]) end
+      if getPlayerSpec()=="Holy" and classOptions["removeDivinePleaAfterControlsEndIfHoly"] then CancelUnitBuff("player", paladin_special["DIVINE_PLEA"]) end
       CancelUnitBuff("player", paladin_special["DIVINE_SACRIFICE"])
    end
 end

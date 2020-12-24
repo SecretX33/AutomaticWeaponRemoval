@@ -1,5 +1,5 @@
 -- AutomaticWeaponRemoval Localization File
--- Version 1.1
+-- Version 1.1.1
 
 AWR_ADDON_PREFIX = "|cff2f6af5AWR:|r "
 AWR_ADDON_STILL_LOADING = "Try again later, addon still loading..."
@@ -18,6 +18,8 @@ AWR_TEST_BOSS = "Test Boss"
 AWR_LADY_NAME = "Lady Deathwhisper"
 AWR_ADDON_MESSAGE_FOR_CONTROL = "%s casted control on you."
 AWR_ADDON_MESSAGE_FOR_CONTROL_AND_WEAPON_REMOVAL = "%s casted control on you, removing weapons."
+AWR_ADDON_MESSAGE_FOR_CONTROL_AND_WEAPON_REMOVAL_BUT_BAG_WAS_PARTIALLY_FULL = "%s casted control on you, but AWR could not remove all your weapons because |cfff00a0aYOUR BAG WAS PARTIALLY FULL!!!|r."
+AWR_ADDON_MESSAGE_FOR_CONTROL_AND_WEAPON_REMOVAL_BUT_BAG_IS_FULL = "%s casted control on you, but AWR could not remove your weapons at all because |cfff00a0aYOUR BAG IS FULL!!!|r."
 
 AWR_SPEC_MESSAGE = "Your class is %s and your build is %s."
 
