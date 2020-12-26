@@ -29,12 +29,12 @@ function AWR:LOAD_LANGUAGE_PTBR()
 
    AWR_HELP1 = "|cff2f6af5As opções do 'AutomaticWeaponRemoval' são as seguintes:|r"
    AWR_HELP2 = "|cff2f6af5/awr toggle:|r Liga e desliga o addon."
-   AWR_HELP3 = "|cff2f6af5/awr message \"sua_mensagem\":|r Altera a mensagem que você vai dizer quando for controlado por alguma habilidade."
-   AWR_HELP4 = "|cff2f6af5/awr channel \"o_canal\":|r Altera o canal onde você dirá a mensagem."
+   AWR_HELP3 = "|cff2f6af5/awr message \"sua_mensagem\":|r Troca a mensagem que você vai dizer quando for controlado por alguma habilidade."
+   AWR_HELP4 = "|cff2f6af5/awr channel \"o_canal\":|r Troca o canal onde você dirá a mensagem."
    AWR_HELP5 = "|cff2f6af5/awr removeweapon:|r Simula um cast de Mind Control em você."
    AWR_HELP6 = "|cff2f6af5/awr count:|r Mostra quantas vezes você já foi controlado."
    AWR_HELP7 = "|cff2f6af5/awr spec:|r Mostra qual é a sua classe e spec."
-   AWR_HELP8 = "|cff2f6af5/awr status:|r Mostra se o addon está on/off e o porquê, muito bom pra dar aquela verificada se o addon realmente está ligadoe."
+   AWR_HELP8 = "|cff2f6af5/awr status:|r Mostra se o addon está on/off e o porquê, muito bom pra dar aquela verificada se o addon realmente está ligado."
    AWR_HELP9 = "|cff2f6af5/awr version:|r Mostra a versão do addon."
 
    AWR_TEST_BOSS = "Boss Teste"
