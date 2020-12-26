@@ -5,8 +5,6 @@
 |   Contact: notyetmidnight@gmail.com                           |
 +--------------------------------------------------------------]]
 
-local AWR = CreateFrame("frame")
-
 local sendMessageOnChatWhenControlled       = true     -- default is true
 local channelToSendMessage                  = "YELL"   -- valid options are SAY, YELL, RAID, PARTY
 local messageToBeSentWhenControlled         = "I got controlled, CC me NOW!!!"
@@ -17,15 +15,6 @@ local classOptions = {
    ["removeOnlyBowIfHunter"] = false,                  -- default is false
    ["removePaladinRFAfterControlsEnd"] = true,         -- default is true, the addon won't remove RF if player is protection paladin even if this is set "true"
    ["removeDivinePleaAfterControlsEndIfHoly"] = true,  -- default is true, the idea is to be able to fully heal someone (or yourself) after dominate mind fades because usually you are low on HP then that happens, so be able to heal 100% is better than 50%
-}
--- Before mind control
-local classOptionsListBefore = {
-   ["removeOnlyBowIfHunter"] = "Unequip ONLY bow from Hunter",
-}
--- After mind control
-local classOptionsListAfter = {
-   ["removePaladinRFAfterControlsEnd"] = "Cancel Righteous Fury from Paladin if NOT a tank",
-   ["removeDivinePleaAfterControlsEndIfHoly"] = "Cancel Divine Plea from Holy Paladin",
 }
 
 -- Global Weapon Removal Options
@@ -72,230 +61,13 @@ local removeFor = {
    ["WARLOCK_Destruction"] = false,
 }
 
-local specs = {
-   hunter = {
-      ["BeastMastery"] = "Beast Mastery",
-      ["Marksmanship"] = "Marksmanship",
-      ["Survival"] = "Survival",
-   },
-   deathknight = {
-      ["Blood"] = "Blood",
-      ["Frost"] = "Frost",
-      ["Unholy"] = "Unholy",
-   },
-   paladin = {
-      ["Holy"] = "Holy",
-      ["Protection"] = "Protection",
-      ["Retribution"] = "Retribution",
-   },
-   warrior = {
-      ["Arms"] = "Arms",
-      ["Fury"] = "Fury",
-      ["Protection"] = "Protection",
-   },
-   druid = {
-      ["Balance"] = "Balance",
-      ["Feral"] = "Feral Combat",
-      ["Restoration"] = "Restoration",
-   },
-   rogue = {
-      ["Assassination"] = "Assassination",
-      ["Combat"] = "Combat",
-      ["Subtlety"] = "Subtlety",
-   },
-   shaman = {
-      ["Elemental"] = "Elemental",
-      ["Enhancement"] = "Enhancement",
-      ["Restoration"] = "Restoration",
-   },
-   priest = {
-      ["Discipline"] = "Discipline",
-      ["Holy"] = "Holy",
-      ["Shadow"] = "Shadow",
-   },
-   mage = {
-      ["Arcane"] = "Arcane",
-      ["Fire"] = "Fire",
-      ["Frost"] = "Frost",
-   },
-   warlock = {
-      ["Affliction"] = "Affliction",
-      ["Demonology"] = "Demonology",
-      ["Destruction"] = "Destruction",
-   },
-}
-
-local validChannels      = {"SAY", "YELL", "RAID", "PARTY"}
-local validInstances     = {"Icecrown Citadel", "Ulduar", "Naxxramas"}
-local dpsPhysicalClasses = {"HUNTER", "DEATHKNIGHT", "PALADIN_Protection", "PALADIN_Retribution", "WARRIOR", "DRUID_Feral", "ROGUE", "SHAMAN_Enhancement"}
-local dpsSpellClasses    = {"DRUID_Balance","SHAMAN_Elemental","PRIEST_Shadow","MAGE","WARLOCK"}
-local healerClasses      = {"PALADIN_Holy","DRUID_Restoration","SHAMAN_Restoration","PRIEST_Discipline","PRIEST_Holy"}
-
---[[ Option table ]]--
-local optionsFrameModel = {
-   name = "AutomaticWeaponRemoval",
-   handler = AWR,
-   type = "group",
-   args = {
-      enable = {
-         type = "toggle",
-         name = "Enable weapon removal",
-         desc = "If unchecked, AWR will disable itself.",
-         get = "IsAWREnabled",
-         set = "ToggleEnable",
-         width = "full",
-         order = 0,
-      },
-      enablemessage = {
-         type = "toggle",
-         name = "Send message when controlled",
-         desc = "If unchecked, you won't say anything when you get mind controlled.",
-         get = "IsMessageEnabled",
-         set = "ToggleEnableMessage",
-         width = "double",
-         order = 1,
-      },
-      channel = {
-         type = "select",
-         name = "Channel",
-         desc = "Channel where the message will be sent.",
-         values = validChannels,
-         get = "GetChannel",
-         set = "SetChannel",
-         style = "dropdown",
-         order = 2,
-      },
-      message = {
-         type = "input",
-         name = "Message",
-         desc = "Message that will be send when you get mind controlled.",
-         set = "SetMessage",
-         get = "GetMessage",
-         width = "full",
-         order = 3,
-      },
-      desc1 = {
-         type = "header",
-         name = "Class Options",
-         order = 4,
-      },
-      classoptionsbefore = {
-         type = "multiselect",
-         name = "Before mind control",
-         values = classOptionsListBefore,
-         tristate = false,
-         get = "GetClassOption",
-         set = "SetClassOption",
-         width = "full",
-         order = 5,
-      },
-      classoptionsafter = {
-         type = "multiselect",
-         name = "After mind control",
-         values = classOptionsListAfter,
-         tristate = false,
-         get = "GetClassOption",
-         set = "SetClassOption",
-         width = "full",
-         order = 6,
-      },
-      desc2 = {
-         type = "header",
-         name = "Remove weapons for",
-         order = 7,
-      },
-      hunter = {
-         type = "multiselect",
-         name = "Hunter",
-         values = specs.hunter,
-         tristate = false,
-         set = "SetSpecState",
-         get = "GetSpecState",
-         order = 8,
-      },
-      deathknight = {
-         type = "multiselect",
-         name = "Death Knight",
-         values = specs.deathknight,
-         tristate = false,
-         set = "SetSpecState",
-         get = "GetSpecState",
-         order = 9,
-      },
-      paladin = {
-         type = "multiselect",
-         name = "Paladin",
-         values = specs.paladin,
-         tristate = false,
-         set = "SetSpecState",
-         get = "GetSpecState",
-         order = 10,
-      },
-      warrior = {
-         type = "multiselect",
-         name = "Warrior",
-         values = specs.warrior,
-         tristate = false,
-         set = "SetSpecState",
-         get = "GetSpecState",
-         order = 11,
-      },
-      druid = {
-         type = "multiselect",
-         name = "Druid",
-         values = specs.druid,
-         tristate = false,
-         set = "SetSpecState",
-         get = "GetSpecState",
-         order = 12,
-      },
-      rogue = {
-         type = "multiselect",
-         name = "Rogue",
-         values = specs.rogue,
-         tristate = false,
-         set = "SetSpecState",
-         get = "GetSpecState",
-         order = 13,
-      },
-      shaman = {
-         type = "multiselect",
-         name = "Shaman",
-         values = specs.shaman,
-         tristate = false,
-         set = "SetSpecState",
-         get = "GetSpecState",
-         order = 14,
-      },
-      priest = {
-         type = "multiselect",
-         name = "Priest",
-         values = specs.priest,
-         tristate = false,
-         set = "SetSpecState",
-         get = "GetSpecState",
-         order = 15,
-      },
-      mage = {
-         type = "multiselect",
-         name = "Mage",
-         values = specs.mage,
-         tristate = false,
-         set = "SetSpecState",
-         get = "GetSpecState",
-         order = 16,
-      },
-      warlock = {
-         type = "multiselect",
-         name = "Warlock",
-         values = specs.warlock,
-         tristate = false,
-         set = "SetSpecState",
-         get = "GetSpecState",
-         order = 17,
-      },
-   },
-}
+local validChannels      = AWR_VALID_CHANNELS
+local validInstances     = AWR_VALID_INSTANCES
+local validLanguages     = AWR_SUPPORTED_LANGUAGES
+local dpsPhysicalClasses = AWR_DPS_PHYSICAL_CLASSES
+local dpsSpellClasses    = AWR_DPS_SPELL_CLASSES
+local healerClasses      = AWR_HEALER_CLASSES
+local specs              = AWR_SPECS
 
 local wrDebug                 = false      -- AWR debug messages
 local mind_control_spells_ids = {
@@ -647,10 +419,11 @@ local instanceIsHeroic
 
 local groupTalentsLib
 local addonVersion
+local addonLanguage = "enUS"
 
 -- Upvalues
-local UnitInRaid, UnitAffectingCombat = UnitInRaid, UnitAffectingCombat
-local GetSpellLink, UnitAffectingCombat, format = GetSpellLink, UnitAffectingCombat, string.format
+local UnitInRaid, UnitAffectingCombat, format = UnitInRaid, UnitAffectingCombat, string.format
+local GetSpellLink = GetSpellLink
 
 AWR:SetScript("OnEvent", function(self, event, ...)
    self[event](self, ...)
@@ -721,6 +494,18 @@ local function tableHasThisEntry(table, entry)
 
    for _, value in ipairs(table) do
       if value == entry then
+         return true
+      end
+   end
+   return false
+end
+
+local function tableHasThisEntryOnKeyOrValue(table, entry)
+   if table==nil then send("table came nil inside function that check if table has a value, report this");return; end
+   if entry==nil then send("entry came nil inside function to check if table has a value, report this");return; end
+
+   for key, value in pairs(table) do
+      if key:lower() == entry or value:lower() == entry then
          return true
       end
    end
@@ -1236,7 +1021,33 @@ local function slashChannel(channel)
       end
       send(format(AWR_ERROR_INVALID_CHANNEL,str))
    end
+end
 
+-- setlanguage, sl
+local function slashSetLanguage(language)
+   if language == nil or language == "" then
+      send(format(AWR_SELECTED_LANGUAGE,addonLanguage))
+      return
+   end
+
+   language = trim(language:lower())
+   if tableHasThisEntryOnKeyOrValue(validLanguages, language) then
+      for k,v in pairs(validLanguages) do
+         if k:lower() == language or v:lower() == language then
+            send(format(AWR_CHANGED_CURRENTLY_LANGUAGE,v,k))
+            addonLanguage = k
+            AWR.db.addonLanguage = k
+            return
+         end
+      end
+   else
+      local str = ""
+      local validLanguagesLength = getTableLength(validLanguages)
+      for key, value in pairs(validLanguages) do
+         str = str .. "\"" .. value .. " (" .. key .. ")" .. "\"" .. (index~= validLanguagesLength and ", " or ".")
+      end
+      send(format(AWR_ERROR_INVALID_LANGUAGE,str))
+   end
 end
 
 local function slashCommand(typed)
@@ -1266,6 +1077,7 @@ local function slashCommand(typed)
    elseif(cmd=="count" or cmd=="report") then slashCount()
    elseif(cmd=="message" or cmd=="m") then slashMessage(extra)
    elseif(cmd=="channel" or cmd=="c") then slashChannel(extra)
+   elseif(cmd=="setlanguage" or cmd=="sl") then slashSetLanguage(extra)
    end
 end
 -- End of slash commands function
@@ -1294,6 +1106,10 @@ function AWR:GetMessage(info)
 end
 
 function AWR:SetMessage(info, newMessage)
+   if(newMessage == "") then
+      send(AWR_ERROR_MESSAGE_CANNOT_BE_EMPTY)
+      return
+   end
    messageToBeSentWhenControlled = newMessage
    self.db.messageToBeSentWhenControlled = newMessage
    send(format(AWR_CHANGED_SAY_MESSAGE, newMessage))
@@ -1308,8 +1124,20 @@ end
 function AWR:SetChannel(info, newChannel)
    newChannel = validChannels[newChannel]
    channelToSendMessage = newChannel
-   self.db.newChannel = newChannel
+   self.db.channelToSendMessage = newChannel
    send(format(AWR_CHANGED_CURRENTLY_CHANNEL,newChannel))
+end
+
+function AWR:GetLanguage(info)
+   for languageCode,_ in pairs(validLanguages) do
+      if languageCode == addonLanguage then return languageCode end
+   end
+end
+
+function AWR:SetLanguage(info, newLanguage)
+   addonLanguage = newLanguage
+   self.db.addonLanguage = newLanguage
+   send(format(AWR_CHANGED_CURRENTLY_LANGUAGE, validLanguages[newLanguage],""))
 end
 
 function AWR:GetClassOption(info, option)
@@ -1382,12 +1210,13 @@ function AWR:ADDON_LOADED(addon)
    playerControlledCount = self.dbc.playerControlledCount
    weaponsRemovedCount = self.dbc.weaponsRemovedCount
 
+
+   addonLanguage = self.db.addonLanguage or addonLanguage
+   if self.db.addonLanguage==nil and GetRealmName():lower():find("brasil") then
+      addonLanguage = "ptBR"
+   end
    addonVersion = GetAddOnMetadata("AutomaticWeaponRemoval", "Version")
    groupTalentsLib = LibStub("LibGroupTalents-1.0")
-
-   -- Loading Config Frame
-   LibStub("AceConfig-3.0"):RegisterOptionsTable("AutomaticWeaponRemoval", optionsFrameModel)
-   self.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("AutomaticWeaponRemoval")
 
    SLASH_AUTOMATICWEAPONREMOVAL1 = "/awr"
    SLASH_AUTOMATICWEAPONREMOVAL2 = "/automaticweaponremoval"
@@ -1396,6 +1225,9 @@ function AWR:ADDON_LOADED(addon)
 
    self:RegisterEvent("PLAYER_ENTERING_WORLD")
    self:UnregisterEvent("ADDON_LOADED")
+
+   AWR_LANGUAGE_SET = true
+   CH.callbacks:Fire("LOAD_LANGUAGE", addonLanguage)
 end
 
 AWR:RegisterEvent("ADDON_LOADED")
