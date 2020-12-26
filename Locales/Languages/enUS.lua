@@ -2,10 +2,14 @@
 -- English (enUS)
 
 function AWR:LOAD_LANGUAGE_ENUS()
+   AWR_YES = "Yes"
+   AWR_NO = "No"
+
    -- Interface text
    AWR_ENABLE_ADDON = "Enable addon"
    AWR_ENABLE_ADDON_DESC = "If unchecked, AWR will disable itself."
    AWR_LANGUAGE = "Language"
+   AWR_RELOAD_UI_POPUP_TITLE = "Your interface needs to be reloaded apply the new language. Reload now?"
    AWR_SEND_MESSAGE_WHEN_CONTROLLED = "Send message when controlled"
    AWR_SEND_MESSAGE_WHEN_CONTROLLED_DESC = "If unchecked, you won't say anything when you get mind controlled."
    AWR_CHANNEL = "Channel"
@@ -63,7 +67,7 @@ function AWR:LOAD_LANGUAGE_ENUS()
    AWR_ERROR_INVALID_CHANNEL = "this channel doesn't exist, please choose one of the following: %s"
 
    AWR_SELECTED_LANGUAGE = "select language is: |cfff84d13%s|r"
-   AWR_CHANGED_CURRENTLY_LANGUAGE = "your language is now set to: |cffff7631%s%s|r."
+   AWR_CHANGED_CURRENTLY_LANGUAGE = "your language will be set to |cffff7631%s%s|r and loaded after you reload your UI."
    AWR_ERROR_INVALID_LANGUAGE = "this language doesn't exist, please choose one of the following: %s"
 
    -- Dealing with language load

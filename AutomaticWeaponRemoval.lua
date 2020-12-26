@@ -1034,7 +1034,7 @@ local function slashSetLanguage(language)
    if tableHasThisEntryOnKeyOrValue(validLanguages, language) then
       for k,v in pairs(validLanguages) do
          if k:lower() == language or v:lower() == language then
-            send(format(AWR_CHANGED_CURRENTLY_LANGUAGE,v,k))
+            send(format(AWR_CHANGED_CURRENTLY_LANGUAGE,v,(format(" (%s)",k))))
             addonLanguage = k
             AWR.db.addonLanguage = k
             return
@@ -1077,7 +1077,7 @@ local function slashCommand(typed)
    elseif(cmd=="count" or cmd=="report") then slashCount()
    elseif(cmd=="message" or cmd=="m") then slashMessage(extra)
    elseif(cmd=="channel" or cmd=="c") then slashChannel(extra)
-   elseif(cmd=="setlanguage" or cmd=="sl") then slashSetLanguage(extra)
+   elseif(cmd=="setlanguage" or cmd=="sl" or cmd=="languageset" or cmd=="ls") then slashSetLanguage(extra)
    end
 end
 -- End of slash commands function
@@ -1138,6 +1138,20 @@ function AWR:SetLanguage(info, newLanguage)
    addonLanguage = newLanguage
    self.db.addonLanguage = newLanguage
    send(format(AWR_CHANGED_CURRENTLY_LANGUAGE, validLanguages[newLanguage],""))
+
+   StaticPopupDialogs["AWR_LANGUAGE_NEEDRELOAD"] = {
+      text = AWR_RELOAD_UI_POPUP_TITLE,
+      button1 = AWR_YES,
+      button2 = AWR_NO,
+      OnAccept = function (self) ReloadUI() end,
+      OnHide = function (self) end,
+      timeout = 0,
+      whileDead = 1,
+      exclusive = 1,
+      showAlert = 1,
+      hideOnEscape = 1
+   };
+   StaticPopup_Show("AWR_LANGUAGE_NEEDRELOAD")
 end
 
 function AWR:GetClassOption(info, option)

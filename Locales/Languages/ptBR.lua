@@ -2,10 +2,14 @@
 -- Brazilian Portuguese (ptBR)
 
 function AWR:LOAD_LANGUAGE_PTBR()
+   AWR_YES = "Sim"
+   AWR_NO = "Não"
+
    -- Interface text
    AWR_ENABLE_ADDON = "Habilitar o addon"
    AWR_ENABLE_ADDON_DESC = "Se desmarcado, o AWR será desativado."
    AWR_LANGUAGE = "Idioma"
+   AWR_RELOAD_UI_POPUP_TITLE = "Sua interface precisa ser recarregada para aplicar o novo idioma. Recarregar agora?"
    AWR_SEND_MESSAGE_WHEN_CONTROLLED = "Falar quando for controlado"
    AWR_SEND_MESSAGE_WHEN_CONTROLLED_DESC = "Se desmarcado, você não vai falar nada quando for controlado."
    AWR_CHANNEL = "Canal"
@@ -62,9 +66,9 @@ function AWR:LOAD_LANGUAGE_PTBR()
    AWR_CHANGED_CURRENTLY_CHANNEL = "você agora vai mandar as mensagens no |cffff7631%s|r."
    AWR_ERROR_INVALID_CHANNEL = "esse canal não existe, por favor escolha algum dos seguintes canais: %s"
 
-   AWR_SELECTED_LANGUAGE = "a linguagem atual é: |cfff84d13%s|r"
-   AWR_CHANGED_CURRENTLY_LANGUAGE = "a linguagem foi definida para: |cffff7631%s%s|r."
-   AWR_ERROR_INVALID_LANGUAGE = "essa linguagem não existe, por favor escolha alguma das seguintes linguagens: %s"
+   AWR_SELECTED_LANGUAGE = "o idioma atual é: |cfff84d13%s|r"
+   AWR_CHANGED_CURRENTLY_LANGUAGE = "o idioma escolhido foi |cffff7631%s%s|r e será aplicado depois que você recarregar sua interface."
+   AWR_ERROR_INVALID_LANGUAGE = "esse idioma não existe, por favor escolha algum dps seguintes idiomas: %s"
 
    -- Dealing with language load
    AWR_LANGUAGE_LOADED = true
