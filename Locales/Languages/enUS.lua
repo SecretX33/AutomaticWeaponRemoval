@@ -6,7 +6,7 @@ function AWR:LOAD_LANGUAGE_ENUS()
    AWR_NO = "No"
 
    -- Interface text
-   AWR_CREDITS = "Created by Freezingice of SlowFall (WoW-Brasil)"
+   AWR_CREDITS = "Created by Freezingice (WoW-Brasil)"
    AWR_ENABLE_ADDON = "Enable addon"
    AWR_ENABLE_ADDON_DESC = "If unchecked, AWR will disable itself."
    AWR_LANGUAGE = "Language"

@@ -6,7 +6,7 @@ function AWR:LOAD_LANGUAGE_PTBR()
    AWR_NO = "Não"
 
    -- Interface text
-   AWR_CREDITS = "Criado por Freezingice da SlowFall (WoW-Brasil)"
+   AWR_CREDITS = "Criado por Freezingice (WoW-Brasil)"
    AWR_ENABLE_ADDON = "Habilitar o addon"
    AWR_ENABLE_ADDON_DESC = "Se desmarcado, o AWR será desativado."
    AWR_LANGUAGE = "Idioma"
