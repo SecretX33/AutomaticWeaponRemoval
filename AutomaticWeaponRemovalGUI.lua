@@ -20,6 +20,20 @@ function AWR:LOAD_INTERFACE()
       handler = AWR,
       type = "group",
       args = {
+         credits = {
+            type = "description",
+            name = AWR_CREDITS,
+            fontSize = "small",
+            width = "full",
+            order = 0,
+         },
+         spacer = {
+            type = "description",
+            name = " ",
+            fontSize = "medium",
+            width = "full",
+            order = 1,
+         },
          enable = {
             type = "toggle",
             name = AWR_ENABLE_ADDON,
@@ -27,7 +41,7 @@ function AWR:LOAD_INTERFACE()
             get = "IsAWREnabled",
             set = "ToggleEnable",
             width = "double",
-            order = 0,
+            order = 2,
          },
          language = {
             type = "select",
@@ -36,7 +50,7 @@ function AWR:LOAD_INTERFACE()
             get = "GetLanguage",
             set = "SetLanguage",
             style = "dropdown",
-            order = 1,
+            order = 3,
          },
          enablemessage = {
             type = "toggle",
@@ -45,7 +59,7 @@ function AWR:LOAD_INTERFACE()
             get = "IsMessageEnabled",
             set = "ToggleEnableMessage",
             width = "double",
-            order = 2,
+            order = 4,
          },
          channel = {
             type = "select",
@@ -55,7 +69,7 @@ function AWR:LOAD_INTERFACE()
             get = "GetChannel",
             set = "SetChannel",
             style = "dropdown",
-            order = 3,
+            order = 5,
          },
          message = {
             type = "input",
@@ -64,12 +78,12 @@ function AWR:LOAD_INTERFACE()
             set = "SetMessage",
             get = "GetMessage",
             width = "full",
-            order = 4,
+            order = 6,
          },
          desc1 = {
             type = "header",
             name = AWR_CLASS_OPTIONS,
-            order = 5,
+            order = 7,
          },
          classoptionsbefore = {
             type = "multiselect",
@@ -79,7 +93,7 @@ function AWR:LOAD_INTERFACE()
             get = "GetClassOption",
             set = "SetClassOption",
             width = "full",
-            order = 6,
+            order = 8,
          },
          classoptionsafter = {
             type = "multiselect",
@@ -89,12 +103,12 @@ function AWR:LOAD_INTERFACE()
             get = "GetClassOption",
             set = "SetClassOption",
             width = "full",
-            order = 7,
+            order = 9,
          },
          desc2 = {
             type = "header",
             name = AWR_REMOVE_WEAPONS_FOR,
-            order = 8,
+            order = 10,
          },
          hunter = {
             type = "multiselect",
@@ -103,7 +117,7 @@ function AWR:LOAD_INTERFACE()
             tristate = false,
             set = "SetSpecState",
             get = "GetSpecState",
-            order = 9,
+            order = 11,
          },
          deathknight = {
             type = "multiselect",
@@ -112,7 +126,7 @@ function AWR:LOAD_INTERFACE()
             tristate = false,
             set = "SetSpecState",
             get = "GetSpecState",
-            order = 10,
+            order = 12,
          },
          paladin = {
             type = "multiselect",
@@ -121,7 +135,7 @@ function AWR:LOAD_INTERFACE()
             tristate = false,
             set = "SetSpecState",
             get = "GetSpecState",
-            order = 11,
+            order = 13,
          },
          warrior = {
             type = "multiselect",
@@ -130,7 +144,7 @@ function AWR:LOAD_INTERFACE()
             tristate = false,
             set = "SetSpecState",
             get = "GetSpecState",
-            order = 12,
+            order = 14,
          },
          druid = {
             type = "multiselect",
@@ -139,7 +153,7 @@ function AWR:LOAD_INTERFACE()
             tristate = false,
             set = "SetSpecState",
             get = "GetSpecState",
-            order = 13,
+            order = 15,
          },
          rogue = {
             type = "multiselect",
@@ -148,7 +162,7 @@ function AWR:LOAD_INTERFACE()
             tristate = false,
             set = "SetSpecState",
             get = "GetSpecState",
-            order = 14,
+            order = 16,
          },
          shaman = {
             type = "multiselect",
@@ -157,7 +171,7 @@ function AWR:LOAD_INTERFACE()
             tristate = false,
             set = "SetSpecState",
             get = "GetSpecState",
-            order = 15,
+            order = 17,
          },
          priest = {
             type = "multiselect",
@@ -166,7 +180,7 @@ function AWR:LOAD_INTERFACE()
             tristate = false,
             set = "SetSpecState",
             get = "GetSpecState",
-            order = 16,
+            order = 18,
          },
          mage = {
             type = "multiselect",
@@ -175,7 +189,7 @@ function AWR:LOAD_INTERFACE()
             tristate = false,
             set = "SetSpecState",
             get = "GetSpecState",
-            order = 17,
+            order = 19,
          },
          warlock = {
             type = "multiselect",
@@ -184,7 +198,7 @@ function AWR:LOAD_INTERFACE()
             tristate = false,
             set = "SetSpecState",
             get = "GetSpecState",
-            order = 18,
+            order = 20,
          },
       },
    }

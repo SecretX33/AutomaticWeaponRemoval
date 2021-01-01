@@ -418,7 +418,6 @@ local instanceDifficultyIndex
 local instanceIsHeroic
 
 local groupTalentsLib
-local addonVersion
 local addonLanguage = "enUS"
 
 -- Upvalues
@@ -432,6 +431,10 @@ end)
 -- Utility functions
 local function send(msg)
    if(msg~=nil) then print(AWR_ADDON_PREFIX .. msg) end
+end
+
+function AWR:Send(msg)
+   send(msg)
 end
 
 local function sendNoPrefix(msg)
@@ -829,7 +832,6 @@ local function regForAllEvents()
    AWR:RegisterEvent("PLAYER_REGEN_ENABLED")
    AWR:RegisterEvent("PLAYER_REGEN_DISABLED")
    AWR:RegisterEvent("PLAYER_TALENT_UPDATE")
-   --AWR:RegisterEvent("PLAYER_DIFFICULTY_CHANGED")
 end
 
 local function unregFromAllEvents()
@@ -840,7 +842,6 @@ local function unregFromAllEvents()
    AWR:UnregisterEvent("PLAYER_REGEN_ENABLED")
    AWR:UnregisterEvent("PLAYER_REGEN_DISABLED")
    AWR:UnregisterEvent("PLAYER_TALENT_UPDATE")
-   --AWR:UnregisterEvent("PLAYER_DIFFICULTY_CHANGED")
 end
 
 -- Checks if addon should be enabled, and enable it if isn't enabled, and disable if it should not be enabled
@@ -883,10 +884,6 @@ function AWR:PLAYER_REGEN_DISABLED()
    updatePlayerClassAndSpecIfNeeded()
 end
 
---function AWR:PLAYER_DIFFICULTY_CHANGED()
---   checkIfAddonShouldBeEnabled()
---end
-
 function AWR:PLAYER_TALENT_UPDATE()
    updatePlayerClassAndSpec()
    if wrDebug then send("updated talents, now you are using " .. (playerSpec or "Unknown")) end
@@ -925,8 +922,8 @@ end
 
 -- version, ver
 local function slashVersion()
-   if(addonVersion==nil) then send(AWR_ADDON_STILL_LOADING); return; end
-   send("version " .. addonVersion)
+   if(AWR.Version==nil) then send(AWR_ADDON_STILL_LOADING); return; end
+   send("version " .. AWR.Version)
 end
 
 -- spec
@@ -1229,7 +1226,7 @@ function AWR:ADDON_LOADED(addon)
    if self.db.addonLanguage==nil and GetRealmName():lower():find("brasil") then
       addonLanguage = "ptBR"
    end
-   addonVersion = GetAddOnMetadata("AutomaticWeaponRemoval", "Version")
+   AWR.Version = GetAddOnMetadata("AutomaticWeaponRemoval", "Version")
    groupTalentsLib = LibStub("LibGroupTalents-1.0")
 
    SLASH_AUTOMATICWEAPONREMOVAL1 = "/awr"
@@ -1239,9 +1236,8 @@ function AWR:ADDON_LOADED(addon)
 
    self:RegisterEvent("PLAYER_ENTERING_WORLD")
    self:UnregisterEvent("ADDON_LOADED")
-
-   AWR_LANGUAGE_SET = true
    CH.callbacks:Fire("LOAD_LANGUAGE", addonLanguage)
+   AWR:Send(string.format(AWR_ADDON_LOADED,AWR.Version))
 end
 
 AWR:RegisterEvent("ADDON_LOADED")

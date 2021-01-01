@@ -27,13 +27,13 @@ Configs are done via interface or slash commands.
 
 /awr on/off - Turn addon on or off
 
-/awr message *"your_message"* - Change the message that you will say when Lady controls you
+/awr message *"your_message"* - Change the message that you will say when you get controled
 
 /awr channel *"your_channel"* - Change the channel where you will send the message
 
-/awr removeweapon - Simulate what addon will do when Lady controls you
+/awr removeweapon - Simulate what addon will do when "Test Boss" controls you
 
-/awr count - See how many you have been controlled and how many times the addon has unequiped your weapons
+/awr count - See how many you have been controlled and how many times the addon has unequipped your weapons
 
 /awr spec - See what class and spec you are
 

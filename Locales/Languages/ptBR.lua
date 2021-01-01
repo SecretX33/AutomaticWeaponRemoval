@@ -6,6 +6,7 @@ function AWR:LOAD_LANGUAGE_PTBR()
    AWR_NO = "Não"
 
    -- Interface text
+   AWR_CREDITS = "Criado por Freezingice da SlowFall (WoW-Brasil)"
    AWR_ENABLE_ADDON = "Habilitar o addon"
    AWR_ENABLE_ADDON_DESC = "Se desmarcado, o AWR será desativado."
    AWR_LANGUAGE = "Idioma"
@@ -25,6 +26,7 @@ function AWR:LOAD_LANGUAGE_PTBR()
    AWR_REMOVE_WEAPONS_FOR = "Tirar as armas para"
 
    -- Chat messages
+   AWR_ADDON_LOADED = "carregado v%s."
    AWR_ADDON_STILL_LOADING = "Tente novamente depois, o addon ainda está carregando..."
 
    AWR_HELP1 = "|cff2f6af5As opções do 'AutomaticWeaponRemoval' são as seguintes:|r"
@@ -71,10 +73,8 @@ function AWR:LOAD_LANGUAGE_PTBR()
    AWR_ERROR_INVALID_LANGUAGE = "esse idioma não existe, por favor escolha algum dps seguintes idiomas: %s"
 
    -- Dealing with language load
-   AWR_LANGUAGE_LOADED = true
-   CH.UnregisterCallback(self, "LOAD_LANGUAGE_ENUS")
-   CH.UnregisterCallback(self, "LOAD_LANGUAGE_PTBR")
    CH.callbacks:Fire("LOAD_INTERFACE")
+   CH.callbacks:Fire("UNREGISTER_LANGUAGE_CALLBACK")
 end
 
 CH.RegisterCallback(AWR,"LOAD_LANGUAGE_PTBR")

@@ -6,8 +6,6 @@ AWR = CreateFrame("frame")
 -- Necessary code to handle language change
 CH = LibStub("AceAddon-3.0"):NewAddon("CH", "AceEvent-3.0")
 CH.callbacks = LibStub("CallbackHandler-1.0"):New(CH)
-AWR_LANGUAGE_SET = false
-AWR_LANGUAGE_LOADED = false
 
 AWR_SUPPORTED_LANGUAGES = {
    ["enUS"] = "English",
@@ -84,4 +82,10 @@ function AWR:LOAD_LANGUAGE(_,language)
    CH.UnregisterCallback(self, "LOAD_LANGUAGE")
 end
 
+function AWR:UNREGISTER_LANGUAGE_CALLBACK()
+   CH.UnregisterCallback(self, "LOAD_LANGUAGE_ENUS")
+   CH.UnregisterCallback(self, "LOAD_LANGUAGE_PTBR")
+end
+
 CH.RegisterCallback(AWR,"LOAD_LANGUAGE")
+CH.RegisterCallback(AWR,"UNREGISTER_LANGUAGE_CALLBACK")

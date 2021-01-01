@@ -6,6 +6,7 @@ function AWR:LOAD_LANGUAGE_ENUS()
    AWR_NO = "No"
 
    -- Interface text
+   AWR_CREDITS = "Created by Freezingice of SlowFall (WoW-Brasil)"
    AWR_ENABLE_ADDON = "Enable addon"
    AWR_ENABLE_ADDON_DESC = "If unchecked, AWR will disable itself."
    AWR_LANGUAGE = "Language"
@@ -25,6 +26,7 @@ function AWR:LOAD_LANGUAGE_ENUS()
    AWR_REMOVE_WEAPONS_FOR = "Remove weapons for"
 
    -- Chat messages
+   AWR_ADDON_LOADED = "loaded v%s."
    AWR_ADDON_STILL_LOADING = "Try again later, addon still loading..."
 
    AWR_HELP1 = "|cff2f6af5The options available in the 'AutomaticWeaponRemoval' addon are as follows:|r"
@@ -71,10 +73,8 @@ function AWR:LOAD_LANGUAGE_ENUS()
    AWR_ERROR_INVALID_LANGUAGE = "this language doesn't exist, please choose one of the following: %s"
 
    -- Dealing with language load
-   AWR_LANGUAGE_LOADED = true
-   CH.UnregisterCallback(self, "LOAD_LANGUAGE_ENUS")
-   CH.UnregisterCallback(self, "LOAD_LANGUAGE_PTBR")
    CH.callbacks:Fire("LOAD_INTERFACE")
+   CH.callbacks:Fire("UNREGISTER_LANGUAGE_CALLBACK")
 end
 
 CH.RegisterCallback(AWR,"LOAD_LANGUAGE_ENUS")
