@@ -460,7 +460,7 @@ end
 
 -- Remove spaces on start and end of string
 local function trim(s)
-   if str==nil then return "" end
+   if s==nil then return "" end
    assert(type(s) == "string", "bad argument #1: 's' needs to be a string; instead what came was " .. tostring(type(s)))
    return string.match(s,'^()%s*$') and '' or string.match(s,'^%s*(.*%S)')
 end
