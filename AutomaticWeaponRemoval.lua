@@ -417,12 +417,12 @@ local instanceName
 local instanceDifficultyIndex
 local instanceIsHeroic
 
-local groupTalentsLib
+local libGroupTalents
 local addonLanguage = "enUS"
 
 -- Upvalues
-local UnitInRaid, UnitAffectingCombat, format = UnitInRaid, UnitAffectingCombat, string.format
-local GetSpellLink = GetSpellLink
+local UnitName, SendChatMessage, CancelUnitBuff, PickupInventoryItem, PutItemInBackpack, UnitBuff, format = UnitName, SendChatMessage, CancelUnitBuff, PickupInventoryItem, PutItemInBackpack, UnitBuff, string.format
+local GetSpellLink, GetInstanceInfo, GetInventoryItemLink, GetTime, GetContainerNumFreeSlots = GetSpellLink, GetInstanceInfo, GetInventoryItemLink, GetTime, GetContainerNumFreeSlots
 
 AWR:SetScript("OnEvent", function(self, event, ...)
    self[event](self, ...)
@@ -431,10 +431,6 @@ end)
 -- Utility functions
 local function send(msg)
    if(msg~=nil) then print(AWR_ADDON_PREFIX .. msg) end
-end
-
-function AWR:Send(msg)
-   send(msg)
 end
 
 local function sendNoPrefix(msg)
@@ -451,36 +447,43 @@ end
 
 -- [string utils]
 local function upperFirst(str)
-   if(str==nil) then return "" end
+   if str==nil then return "" end
+   assert(type(str) == "string", "bad argument #1: 'str' needs to be a string; instead what came was " .. tostring(type(str)))
    return (str:gsub("^%l", string.upper))
 end
 
 local function upperFirstOnly(str)
-   if(str==nil) then return "" end
+   if str==nil then return "" end
+   assert(type(str) == "string", "bad argument #1: 'str' needs to be a string; instead what came was " .. tostring(type(str)))
    return upperFirst(str:lower())
 end
 
 -- Remove spaces on start and end of string
 local function trim(s)
+   if str==nil then return "" end
+   assert(type(s) == "string", "bad argument #1: 's' needs to be a string; instead what came was " .. tostring(type(s)))
    return string.match(s,'^()%s*$') and '' or string.match(s,'^%s*(.*%S)')
 end
 
 local function removeWords(myString, numberOfWords)
    if (myString~=nil and numberOfWords~=nil) then
-      if is_int(numberOfWords) then
-         for i=1, numberOfWords do
-            myString = string.gsub(myString,"^(%s*%a+)","",1)
-         end
-         return trim(myString)
-      else send("numberOfWords arg came, it's not nil BUT it's also NOT an integer, report this, type = " .. tostring(type(numberOfWords))) end
+      assert(type(myString) == "string", "bad argument #1: 'myString' needs to be a string; instead what came was " .. tostring(type(myString)))
+      assert(type(numberOfWords) == "number", "bad argument #2: 'numberOfWords' needs to be a table; instead what came was " .. tostring(type(numberOfWords)))
+      assert(math.floor(numberOfWords) == numberOfWords, "bad argument #2: 'numberOfWords' needs to be an integer")
+
+      for i=1, numberOfWords do
+         myString = string.gsub(myString,"^(%s*%a+)","",1)
+      end
+      return trim(myString)
    end
    return ""
 end
 -- end of [string utils]
 
 local function doesElementContainsAnyValueFromTable(table, element)
-   if table==nil then send("table came nil inside function to check if table contain a value that fits inside an element, report this");return; end
-   if element==nil then send("element came nil inside function to check if table contain a value that fits inside an element, report this");return; end
+   assert(table~=nil, "bad argument #1: 'table' cannot be nil")
+   assert(type(table) == "table", "bad argument #1: 'table' needs to be a table; instead what came was " .. tostring(type(table)))
+   assert(element~=nil, "bad argument #2: 'element' cannot be nil")
 
    -- If any value from the table is contained inside the element then return true, aka the table have a value that match fits inside the element
    for _, value in pairs(table) do
@@ -492,8 +495,9 @@ local function doesElementContainsAnyValueFromTable(table, element)
 end
 
 local function tableHasThisEntry(table, entry)
-   if table==nil then send("table came nil inside function that check if table has a value, report this");return; end
-   if entry==nil then send("entry came nil inside function to check if table has a value, report this");return; end
+   assert(table~=nil, "bad argument #1: 'table' cannot be nil")
+   assert(type(table) == "table", "bad argument #1: 'table' needs to be a table; instead what came was " .. tostring(type(table)))
+   assert(entry~=nil, "bad argument #2: 'entry' cannot be nil")
 
    for _, value in ipairs(table) do
       if value == entry then
@@ -504,11 +508,12 @@ local function tableHasThisEntry(table, entry)
 end
 
 local function tableHasThisEntryOnKeyOrValue(table, entry)
-   if table==nil then send("table came nil inside function that check if table has a value, report this");return; end
-   if entry==nil then send("entry came nil inside function to check if table has a value, report this");return; end
+   assert(table~=nil, "bad argument #1: 'table' cannot be nil")
+   assert(type(table) == "table", "bad argument #1: 'table' needs to be a table; instead what came was " .. tostring(type(table)))
+   assert(entry~=nil, "bad argument #2: 'entry' cannot be nil")
 
    for key, value in pairs(table) do
-      if key:lower() == entry or value:lower() == entry then
+      if key:lower() == entry:lower() or value:lower() == entry:lower() then
          return true
       end
    end
@@ -516,6 +521,9 @@ local function tableHasThisEntryOnKeyOrValue(table, entry)
 end
 
 local function getTableLength(table)
+   assert(table~=nil, "bad argument #1: 'table' cannot be nil")
+   assert(type(table) == "table", "bad argument #1: 'table' needs to be a table; instead what came was " .. tostring(type(table)))
+
    local count = 0
    for _ in pairs(table) do count = count + 1 end
    return count
@@ -544,7 +552,7 @@ end
 local function updatePlayerSpec()
    -- the function GetUnitTalentSpec from GroupTalentsLib can return a number if the player has not yet seen that class/build, so another "just in case" code, but I'm not sure what if this number means the talent tree number (like 1 for balance, 3 for restoration) or just the spec slot (player has just two slots), I guess I'll have to shoot in the dark here. ;)
    -- I just discovered that this function can also return nil if called when player is logging in (probably because the inspect function doesn't work while logging in)
-   local spec = groupTalentsLib:GetUnitTalentSpec(UnitName("player"))
+   local spec = libGroupTalents:GetUnitTalentSpec(UnitName("player"))
    if spec=="Feral Combat" then spec = "Feral" end  -- We will treat 'Feral Combat' as 'Feral'
 
    if spec~=nil then
@@ -624,7 +632,9 @@ local function getICCDifficultyIndexAsString(index)
 end ]]--
 
 local function getBuffExpirationTime(unit, buff)
-   if(unit==nil or buff==nil) then return 0 end
+   assert(unit~=nil, "bad argument #1: 'unit' cannot be nil")
+   assert(type(unit) == "string", "bad argument #1: 'unit' needs to be a string; instead what came was " .. tostring(type(unit)))
+   if(buff==nil) then return 0 end
 
    -- /run print(select(7,UnitBuff("player",GetSpellInfo(48518)))-GetTime())
    -- 11.402
@@ -641,7 +651,7 @@ end
 
 local function getDebuffDurationTime(spellID)
    if spellID==nil then send("spellID came nil inside function to get debuff duration, report this"); return 0; end
-   if not is_int(spellID) then send("spellID came, but it's not an integer inside function to get debuff duration, report this, its type is " .. tostring(type(spellID))); return 0; end
+   if type(spellID)~="number" or math.floor(spellID)~=spellID then send("spellID came, but it's not an integer inside function to get debuff duration, report this, its type is " .. tostring(type(spellID))); return 0; end
 
    for key, value in pairs(mind_control_spells_duration) do
       if key == spellID then
@@ -656,7 +666,8 @@ local function getDebuffDurationTime(spellID)
 end
 
 local function cancelAllBuffsFromPlayerInTable(buffTable)
-   if buffTable==nil then send("buffTable came nil inside function to remove all buffs inside table from player, report this.");return false; end
+   assert(buffTable~=nil, "bad argument #1: 'buffTable' cannot be nil")
+   assert(type(buffTable) == "table", "bad argument #1: 'buffTable' needs to be a table; instead what came was " .. tostring(type(buffTable)))
 
    for _, value in pairs(buffTable) do
       CancelUnitBuff("player", value)
@@ -664,9 +675,11 @@ local function cancelAllBuffsFromPlayerInTable(buffTable)
 end
 
 local function sendAddonMessageForControlled(message, removedWeapons, bossName, isTesting)
-   if(removedWeapons==nil) then send("removedWeapons boolean came nil inside function that send addon message, report this.");return; end
-   if(bossName==nil) then bossName = AWR_LADY_NAME end
-   if(isTesting==nil) then isTesting = false end
+   if message==nil then return end
+   assert(removedWeapons~=nil, "bad argument #2: 'removedWeapons' cannot be nil")
+   assert(type(removedWeapons) == "boolean", "bad argument #2: 'buffTable' needs to be a boolean; instead what came was " .. tostring(type(removedWeapons)))
+   if bossName==nil then bossName = AWR_LADY_NAME end
+   if isTesting==nil then isTesting = false end
 
    if showAddonMessageForWeaponRemoval and (GetTime() > (sentAddonMessageTime + 5)) then -- GetTime comparison here is preventing sending same message two times in a row, a "just in case" check
       send(format(message,bossName))
@@ -685,8 +698,8 @@ end
 
 -- Logic functions are under here
 local function removeWeapons(bossName, isTesting)
-   if(bossName==nil) then bossName = AWR_LADY_NAME end
-   if(isTesting==nil) then isTesting = false end
+   if bossName==nil then bossName = AWR_LADY_NAME end
+   if isTesting==nil then isTesting = false end
    updatePlayerClassAndSpecIfNeeded()
 
    local bagSpace, bagSpaceNeeded = 0, 0
@@ -737,9 +750,9 @@ local function removeWeapons(bossName, isTesting)
 end
 
 local function onDominateMindCast(bossName, spellID, isTesting)
-   if(bossName==nil) then bossName = AWR_LADY_NAME end
-   if(spellID==nil) then spellID = 0 end
-   if(isTesting==nil) then isTesting = false end
+   if bossName==nil then bossName = AWR_LADY_NAME end
+   if spellID==nil or type(spellID)~="number" then spellID = 0 end
+   if isTesting==nil then isTesting = false end
    updatePlayerClassAndSpecIfNeeded()
 
    removeWeapons(bossName, isTesting)
@@ -975,6 +988,7 @@ local function slashMessage(message)
       send(format(AWR_CURRENT_MESSAGE,messageToBeSentWhenControlled))
       return
    end
+   assert(type(message) == "string", "bad argument #1: 'message' needs to be a string; instead what came was " .. tostring(type(message)))
 
    if message:lower()=="toggle" then
       if not sendMessageOnChatWhenControlled then message="on"
@@ -999,6 +1013,7 @@ local function slashChannel(channel)
       send(format(AWR_SELECTED_CHANNEL,channelToSendMessage))
       return
    end
+   assert(type(channel) == "string", "bad argument #1: 'channel' needs to be a string; instead what came was " .. tostring(type(channel)))
 
    channel = channel:upper()
    -- Aliases
@@ -1026,6 +1041,7 @@ local function slashSetLanguage(language)
       send(format(AWR_SELECTED_LANGUAGE,addonLanguage))
       return
    end
+   assert(type(language) == "string", "bad argument #1: 'language' needs to be a string; instead what came was " .. tostring(type(language)))
 
    language = trim(language:lower())
    if tableHasThisEntryOnKeyOrValue(validLanguages, language) then
@@ -1085,6 +1101,8 @@ function AWR:IsAWREnabled(info)
 end
 
 function AWR:ToggleEnable(info, newValue)
+   assert(newValue~=nil, "bad argument #2: 'newValue' cannot be nil")
+   assert(type(newValue) == "boolean", "bad argument #2: 'newValue' needs to be a string; instead what came was " .. tostring(type(newValue)))
    slashToggleAddon(newValue)
 end
 
@@ -1093,6 +1111,8 @@ function AWR:IsMessageEnabled(info)
 end
 
 function AWR:ToggleEnableMessage(info, newValue)
+   assert(newValue~=nil, "bad argument #2: 'newValue' cannot be nil")
+   assert(type(newValue) == "boolean", "bad argument #2: 'newValue' needs to be a string; instead what came was " .. tostring(type(newValue)))
    send(newValue and AWR_MESSAGE_ON or AWR_MESSAGE_OFF)
    sendMessageOnChatWhenControlled = newValue
    self.db.sendMessageOnChatWhenControlled = newValue
@@ -1103,10 +1123,12 @@ function AWR:GetMessage(info)
 end
 
 function AWR:SetMessage(info, newMessage)
-   if(newMessage == "") then
+   if(newMessage==nil or newMessage == "") then
       send(AWR_ERROR_MESSAGE_CANNOT_BE_EMPTY)
       return
    end
+   assert(type(newMessage) == "string", "bad argument #2: 'newMessage' needs to be a string; instead what came was " .. tostring(type(newMessage)))
+
    messageToBeSentWhenControlled = newMessage
    self.db.messageToBeSentWhenControlled = newMessage
    send(format(AWR_CHANGED_SAY_MESSAGE, newMessage))
@@ -1119,6 +1141,9 @@ function AWR:GetChannel(info)
 end
 
 function AWR:SetChannel(info, newChannel)
+   assert(newChannel~=nil, "bad argument #2: 'newChannel' cannot be nil")
+   assert(type(newChannel) == "string", "bad argument #2: 'newChannel' needs to be a string; instead what came was " .. tostring(type(newChannel)))
+
    newChannel = validChannels[newChannel]
    channelToSendMessage = newChannel
    self.db.channelToSendMessage = newChannel
@@ -1132,6 +1157,9 @@ function AWR:GetLanguage(info)
 end
 
 function AWR:SetLanguage(info, newLanguage)
+   assert(newLanguage~=nil, "bad argument #2: 'newLanguage' cannot be nil")
+   assert(type(newLanguage) == "string", "bad argument #2: 'newLanguage' needs to be a string; instead what came was " .. tostring(type(newLanguage)))
+
    addonLanguage = newLanguage
    self.db.addonLanguage = newLanguage
    send(format(AWR_CHANGED_CURRENTLY_LANGUAGE, validLanguages[newLanguage],""))
@@ -1152,21 +1180,36 @@ function AWR:SetLanguage(info, newLanguage)
 end
 
 function AWR:GetClassOption(info, option)
+   assert(option~=nil, "bad argument #2: 'option' cannot be nil")
+   assert(type(option) == "string", "bad argument #2: 'option' needs to be a string; instead what came was " .. tostring(type(option)))
    return classOptions[option]
 end
 
 function AWR:SetClassOption(info, option, newValue)
+   assert(option~=nil, "bad argument #2: 'option' cannot be nil")
+   assert(type(option) == "string", "bad argument #2: 'option' needs to be a string; instead what came was " .. tostring(type(option)))
+   assert(newValue~=nil, "bad argument #3: 'newValue' cannot be nil")
+   assert(type(newValue) == "boolean", "bad argument #3: 'newValue' needs to be a string; instead what came was " .. tostring(type(newValue)))
+
    if wrDebug then send("option is " .. option .. " and newvalue is " .. tostring(newValue)) end
    classOptions[option] = newValue
    self.db.classOptions = classOptions
 end
 
 function AWR:GetSpecState(info, spec)
+   assert(spec~=nil, "bad argument #2: 'spec' cannot be nil")
+   assert(type(spec) == "string", "bad argument #2: 'spec' needs to be a string; instead what came was " .. tostring(type(spec)))
+
    local class = info[#info]:upper()
    return removeFor[format("%s_%s",class,spec)]
 end
 
 function AWR:SetSpecState(info, spec, newValue)
+   assert(spec~=nil, "bad argument #2: 'spec' cannot be nil")
+   assert(type(spec) == "string", "bad argument #2: 'spec' needs to be a string; instead what came was " .. tostring(type(spec)))
+   assert(newValue~=nil, "bad argument #3: 'newValue' cannot be nil")
+   assert(type(newValue) == "boolean", "bad argument #3: 'newValue' needs to be a boolean; instead what came was " .. tostring(type(newValue)))
+
    local class = info[#info]:upper()
    removeFor[format("%s_%s",class,spec)] = newValue
    self.db.removeFor = removeFor
@@ -1227,7 +1270,7 @@ function AWR:ADDON_LOADED(addon)
       addonLanguage = "ptBR"
    end
    AWR.Version = GetAddOnMetadata("AutomaticWeaponRemoval", "Version")
-   groupTalentsLib = LibStub("LibGroupTalents-1.0")
+   libGroupTalents = LibStub("LibGroupTalents-1.0")
 
    SLASH_AUTOMATICWEAPONREMOVAL1 = "/awr"
    SLASH_AUTOMATICWEAPONREMOVAL2 = "/automaticweaponremoval"
@@ -1237,7 +1280,7 @@ function AWR:ADDON_LOADED(addon)
    self:RegisterEvent("PLAYER_ENTERING_WORLD")
    self:UnregisterEvent("ADDON_LOADED")
    CH.callbacks:Fire("LOAD_LANGUAGE", addonLanguage)
-   AWR:Send(string.format(AWR_ADDON_LOADED,AWR.Version))
+   send(format(AWR_ADDON_LOADED,AWR.Version))
 end
 
 AWR:RegisterEvent("ADDON_LOADED")

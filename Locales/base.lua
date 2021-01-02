@@ -74,6 +74,9 @@ AWR_SPECS = {
 }
 
 function AWR:LOAD_LANGUAGE(_,language)
+   assert(language~=nil, "bad argument #2: 'language' cannot be nil")
+   assert(type(language) == "string", "bad argument #2: 'language' needs to be a string; instead what came was " .. tostring(type(language)))
+
    if language == "ptBR" then
       CH.callbacks:Fire("LOAD_LANGUAGE_PTBR")
    else

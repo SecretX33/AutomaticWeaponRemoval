@@ -4,6 +4,8 @@ local validLanguages = AWR_SUPPORTED_LANGUAGES
 local specs = AWR_SPECS
 
 function AWR:LOAD_INTERFACE()
+   assert(AWR_YES~=nil,"ERROR: The language file has to be loaded first before trying to load the interface")
+
    -- Before mind control
    local classOptionsListBefore = {
       ["removeOnlyBowIfHunter"] = AWR_REMOVE_ONLY_BOW_DESC,
