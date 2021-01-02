@@ -465,13 +465,13 @@ local function trim(s)
    return string.match(s,'^()%s*$') and '' or string.match(s,'^%s*(.*%S)')
 end
 
-local function removeWords(myString, numberOfWords)
-   if (myString~=nil and numberOfWords~=nil) then
+local function removeWords(myString, howMany)
+   if (myString~=nil and howMany~=nil) then
       assert(type(myString) == "string", "bad argument #1: 'myString' needs to be a string; instead what came was " .. tostring(type(myString)))
-      assert(type(numberOfWords) == "number", "bad argument #2: 'numberOfWords' needs to be a table; instead what came was " .. tostring(type(numberOfWords)))
-      assert(math.floor(numberOfWords) == numberOfWords, "bad argument #2: 'numberOfWords' needs to be an integer")
+      assert(type(howMany) == "number", "bad argument #2: 'howMany' needs to be a number; instead what came was " .. tostring(type(howMany)))
+      assert(math.floor(howMany) == howMany, "bad argument #2: 'howMany' needs to be an integer")
 
-      for i=1, numberOfWords do
+      for i=1, howMany do
          myString = string.gsub(myString,"^(%s*%a+)","",1)
       end
       return trim(myString)
