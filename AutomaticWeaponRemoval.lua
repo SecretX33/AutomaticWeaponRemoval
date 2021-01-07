@@ -1140,10 +1140,12 @@ do
       if not v2 then return true end
       if not v1.version then return false end
       if not v2.version then return true end
-      if not UnitIsConnected(v1.name) then return false end
-      if not UnitIsConnected(v2.name) then return true end
       if not v1.state then return false end
       if not v2.state then return true end
+      if not v1.name then return false end
+      if not v2.name then return true end
+      if not UnitIsConnected(v1.name) then return false end
+      if not UnitIsConnected(v2.name) then return true end
 
       local a = splitVersion(v1.version,".")
       local b = splitVersion(v2.version,".")
@@ -1153,7 +1155,7 @@ do
          if not a[i] or not b[i] then return a[i]~=nil end
          if a[i]~=b[i] then return a[i] > b[i] end
       end
-      return true
+      return false
    end
 
    function AWR:ShowVersions()
