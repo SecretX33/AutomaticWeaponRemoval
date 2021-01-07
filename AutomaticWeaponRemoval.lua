@@ -84,6 +84,7 @@ local mind_control_spells_cast = {
    ["FACELESS_HORROR_DOMINATE_MIND"] = mind_control_spells_ids["FACELESS_HORROR_DOMINATE_MIND"],
    ["YOGG_INSANE"]                   = mind_control_spells_ids["YOGG_INSANE"],
    ["CHAINS_OF_KELTHUZAD"]           = mind_control_spells_ids["CHAINS_OF_KELTHUZAD"],
+   ["DEBUG"]                         = 0
 }
 local mind_control_spells_duration = {
    [mind_control_spells_ids["LADY_DOMINATE_MIND"]]            = 12,
@@ -419,6 +420,7 @@ local instanceIsHeroic
 
 local libGroupTalents
 local addonLanguage = "enUS"
+local raid = {}
 
 -- Upvalues
 local UnitName, SendChatMessage, CancelUnitBuff, PickupInventoryItem, PutItemInBackpack, UnitBuff, format = UnitName, SendChatMessage, CancelUnitBuff, PickupInventoryItem, PutItemInBackpack, UnitBuff, string.format
@@ -499,7 +501,9 @@ local function tableHasThisEntry(table, entry)
    assert(type(table) == "table", "bad argument #1: 'table' needs to be a table; instead what came was " .. tostring(type(table)))
    assert(entry~=nil, "bad argument #2: 'entry' cannot be nil")
 
-   for _, value in ipairs(table) do
+   local func = (rawget(table, 1) ~= nil) and ipairs or pairs
+
+   for _, value in func(table) do
       if value == entry then
          return true
       end
@@ -527,6 +531,20 @@ local function getTableLength(table)
    local count = 0
    for _ in pairs(table) do count = count + 1 end
    return count
+end
+
+-- automatically sends an addon message to the appropriate channel (BATTLEGROUND, RAID or PARTY)
+local function sendSync(prefix, msg)
+   assert(prefix~=nil, "bad argument #1: 'prefix' cannot be nil")
+   assert(type(prefix) == "string", "bad argument #1: 'prefix' needs to be a string; instead what came was " .. tostring(type(prefix)))
+   local zoneType = select(2, IsInInstance())
+   if zoneType == "pvp" or zoneType == "arena" then
+      SendAddonMessage(prefix, msg, "BATTLEGROUND")
+   elseif GetRealNumRaidMembers() > 0 then
+      SendAddonMessage(prefix, msg, "RAID")
+   elseif GetRealNumPartyMembers() > 0 then
+      SendAddonMessage(prefix, msg, "PARTY")
+   end
 end
 
 --local function isAddonEnabledForPlayerClass()
@@ -579,6 +597,34 @@ local function updatePlayerClassAndSpecIfNeeded()
    if playerSpec==nil or playerClassAndSpec==nil then updatePlayerClassAndSpec() end
 end
 
+do
+   local nextQuery;
+
+   local function onUpdate()
+      if not nextQuery or GetTime() < nextQuery then
+         return;
+      end
+      updatePlayerClassAndSpecIfNeeded()
+      if playerSpec and playerClassAndSpec then
+         if wrDebug then send("unregisted of function to query player class and spec") end
+         nextQuery = nil
+         this:SetScript("OnUpdate", nil)
+         AWR:ResetRaid()
+         AWR:RAID_ROSTER_UPDATE()
+         AWR:PARTY_MEMBERS_CHANGED()
+      else
+         nextQuery = GetTime() + 1
+      end
+   end
+
+   function AWR:QueueGetPlayerClassSpec()
+      if not playerClassAndSpec and not nextQuery then
+         nextQuery = GetTime() + 2
+         this:SetScript("OnUpdate", onUpdate)
+      end
+   end
+end
+
 local function isPlayerDPSPhysical()
    updatePlayerClassAndSpecIfNeeded()
    if playerClassAndSpec==nil then send("playerClassAndSpec came nil inside function to check if player is dps physical, report this.");return false; end
@@ -606,30 +652,18 @@ local function isPlayerHealer()
    return isHealer
 end
 
--- Not using these functions yet
---[[local function getSpellName(spellID)
-   if spellID==nil then return "" end
+function AWR:GetFormattedClassSpec()
+   updatePlayerClassAndSpec()
+   local spec = getPlayerSpec()
+   local class = playerClass
 
-   local spellName = GetSpellInfo(spellID)
-   if spellName~=nil then return spellName else return "" end
+   if class=="DEATHKNIGHT" then class = "Death Knight"
+   else class = upperFirstOnly(playerClass) end
+   if spec==nil then spec = "Unknown"
+   else spec = upperFirstOnly(spec) end
+
+   return class, spec
 end
-
-local function doesUnitHaveThisBuff(unit, buff)
-   if(unit==nil or buff==nil) then return false end
-
-   return UnitBuff(unit,buff)~=nil
-end
-
-local function getICCDifficultyIndexAsString(index)
-   if index==nil then send("'index' parameter came nil inside function to get instance as name, report this."); return ""; end
-
-   if index==1 then return "10-man normal"
-   elseif index==2 then return "25-man normal"
-   elseif index==3 then return "10-man heroic"
-   elseif index==4 then return "25-man heroic"
-   else send("Report this, unexpected value came as parameter inside function that convert difficultyIndex to the string equivalent, the value passed is \'" .. tostring(index) .. "\'.")
-   end
-end ]]--
 
 local function getBuffExpirationTime(unit, buff)
    assert(unit~=nil, "bad argument #1: 'unit' cannot be nil")
@@ -831,9 +865,187 @@ function AWR:COMBAT_LOG_EVENT_UNFILTERED(timestamp, event, srcGUID, srcName, src
       onDominateMindFade()
 
    -- A test case with a Paladin casting 10 minute Kings on player to simulate a Mind Control
-   elseif wrDebug and spellID == 20217 and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
-      send(srcName .. " just casted " .. (GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " on the player.")
-      onDominateMindCast(srcName, spellID)
+   --elseif wrDebug and spellID == 20217 and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
+   --   send(srcName .. " just casted " .. (GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " on the player.")
+   --   onDominateMindCast(srcName, spellID)
+   end
+end
+
+local function splitVersion(version, delimiter)
+   if delimiter == nil then
+      delimiter = "%s"
+   end
+   local t={}
+   for str in string.gmatch(version, "([^"..delimiter.."]+)") do
+      table.insert(t, tonumber(str or 0))
+   end
+   return t
+end
+
+-----------------------------
+--  Handle Incoming Syncs  --
+-----------------------------
+do
+   local syncHandlers = {}
+
+   syncHandlers["AWR-RW"] = function(msg, channel, sender)
+      if msg == "Hi!" then
+         if playerClassAndSpec then
+            local state = (AWR.dbc.enabled and removeFor[playerClassAndSpec])
+            local spec_state = format("%s\t%s",getPlayerSpec(),tostring(state))
+            sendSync("AWR-RW", spec_state)
+         else
+            AWR:QueueGetPlayerClassSpec()
+         end
+      else
+         local spec, state = string.split("\t", msg)
+         state = (state=="true")
+         if sender and sender~="" then
+            if wrDebug then send(format("%s sent you his spec (%s) and state (%s)",sender,(spec~=nil and spec or "Unknown"),(state~=nil and tostring(state) or "unknown"))) end
+            raid[sender] = raid[sender] or {}
+            raid[sender].spec = spec~=nil and spec or "Unknown"
+            raid[sender].state = state
+         end
+      end
+   end
+
+   syncHandlers["AWR-Ver"] = function(msg, channel, sender)
+      if msg == "Hi!" then
+         sendSync("AWR-Ver", AWR.Version)
+      else
+         local version = msg
+         if version and version~="" and sender and sender~="" and raid and raid[sender] then
+            raid[sender].version = version
+         end
+      end
+   end
+
+   function AWR:CHAT_MSG_ADDON(prefix, msg, channel, sender)
+      if msg and channel ~= "WHISPER" and channel ~= "GUILD" then
+         local handler = syncHandlers[prefix]
+         if handler then handler(msg, channel, sender) end
+         --elseif msg and channel == "WHISPER" and self:GetRaidUnitId(sender) ~= "none" then
+         --   local handler = whisperSyncHandlers[prefix]
+         --   if handler then handler(msg, channel, sender) end
+      end
+   end
+end
+
+---------------------------
+--  Raid/Party Handling  --
+---------------------------
+do
+   local inRaid = false
+
+   function AWR:RAID_ROSTER_UPDATE()
+      if GetNumRaidMembers() >= 1 then
+         if not inRaid then
+            inRaid = true
+            sendSync("AWR-Ver", "Hi!")
+            sendSync("AWR-RW", "Hi!")
+         end
+         for i = 1, GetNumRaidMembers() do
+            local name, rank, subgroup, _, _, fileName,_,online = GetRaidRosterInfo(i)
+            if name and inRaid then
+               raid[name] = raid[name] or {}
+               raid[name].name = name
+               raid[name].rank = rank
+               raid[name].subgroup = subgroup
+               raid[name].class = fileName
+               raid[name].id = "raid"..i
+               if raid[name].priority~=nil and not online then raid[name].priority=nil end
+               raid[name].updated = true
+            end
+         end
+         -- removing players that left pt
+         for i, v in pairs(raid) do
+            if not v.updated then
+               raid[i] = nil
+            else
+               v.updated = nil
+            end
+         end
+      else
+         AWR:ResetRaid()
+      end
+   end
+
+   function AWR:PARTY_MEMBERS_CHANGED()
+      if GetNumRaidMembers() > 0 then return end
+      if GetNumPartyMembers() >= 1 then
+         if not inRaid then
+            inRaid = true
+            sendSync("AWR-Ver", "Hi!")
+            sendSync("AWR-RW", "Hi!")
+         end
+         for i = 0, GetNumPartyMembers() do
+            local id
+            if (i == 0) then
+               id = "player"
+            else
+               id = "party"..i
+            end
+            local name, server = UnitName(id)
+            local rank, _, fileName = UnitIsPartyLeader(id), UnitClass(id)
+            if server and server ~= ""  then
+               name = name.."-"..server
+            end
+            local online = UnitIsConnected(name) and true or false
+            raid[name] = raid[name] or {}
+            raid[name].name = name
+            if rank then
+               raid[name].rank = 2
+            else
+               raid[name].rank = 0
+            end
+            raid[name].class = fileName
+            raid[name].id = id
+            if raid[name].priority~=nil and not online then raid[name].priority=nil end
+            raid[name].updated = true
+         end
+         -- removing players that left pt
+         for i, v in pairs(raid) do
+            if not v.updated then
+               raid[i] = nil
+            else
+               v.updated = nil
+            end
+         end
+      else
+         AWR:ResetRaid()
+      end
+   end
+
+   function AWR:IsInRaid(name)
+      return name==UnitName("player") and inRaid or (raid[name] and raid[name].id~=nil)
+   end
+
+   function AWR:GetRaidRank(name)
+      name = name or UnitName("player")
+      return (raid[name] and raid[name].rank) or 0
+   end
+
+   function AWR:GetRaidSubgroup(name)
+      name = name or UnitName("player")
+      return (raid[name] and raid[name].subgroup) or 0
+   end
+
+   function AWR:GetRaidClass(name)
+      name = name or UnitName("player")
+      return (raid[name] and raid[name].class) or "UNKNOWN"
+   end
+
+   function AWR:GetRaidUnitId(name)
+      name = name or UnitName("player")
+      return (raid[name] and raid[name].id) or "none"
+   end
+
+   function AWR:ResetRaid()
+      for i, v in pairs(raid) do
+         raid[i] = nil
+      end
+      raid = {}
+      inRaid = false
    end
 end
 
@@ -845,6 +1057,7 @@ local function regForAllEvents()
    AWR:RegisterEvent("PLAYER_REGEN_ENABLED")
    AWR:RegisterEvent("PLAYER_REGEN_DISABLED")
    AWR:RegisterEvent("PLAYER_TALENT_UPDATE")
+   updatePlayerClassAndSpecIfNeeded()
 end
 
 local function unregFromAllEvents()
@@ -899,6 +1112,7 @@ end
 
 function AWR:PLAYER_TALENT_UPDATE()
    updatePlayerClassAndSpec()
+   sendSync("AWR-RW", "Hi!")
    if wrDebug then send("updated talents, now you are using " .. (playerSpec or "Unknown")) end
 end
 
@@ -912,13 +1126,80 @@ function AWR:PLAYER_ENTERING_WORLD()
    checkIfAddonShouldBeEnabled()
 end
 
+do
+   local function sortVersion(v1, v2)
+      if not v1 then return false end
+      if not v2 then return true end
+      if not v1.version then return false end
+      if not v2.version then return true end
+      if not UnitIsConnected(v1.name) then return false end
+      if not UnitIsConnected(v2.name) then return true end
+      if not v1.state then return false end
+      if not v2.state then return true end
+
+      local a = splitVersion(v1.version,".")
+      local b = splitVersion(v2.version,".")
+
+      local max = math.max(getTableLength(a), getTableLength(b), 1)
+      for i=1, max do
+         if not a[i] or not b[i] then return a[i]~=nil end
+         if a[i]~=b[i] then return a[i] > b[i] end
+      end
+      return true
+   end
+
+   function AWR:ShowVersions()
+      local sortedTable = {}
+      for i, v in pairs(raid) do
+         if v~=nil then table.insert(sortedTable, v) end
+      end
+      print("|cff2d61e3<|r|cff2f6af5AWR|r|cff2d61e3>|r |cff879ff5AWR - Versions|r")
+      if getTableLength(sortedTable) > 1 then table.sort(sortedTable, sortVersion) end
+      if getTableLength(sortedTable) == 0 then
+         if AWR.Version and AWR.dbc.enabled then
+            print(format("|cff2d61e3<|r|cff2f6af5AWR|r|cff2d61e3>|r |cff879ff5%s|r: %s", UnitName("player"), AWR.Version))
+         else
+            print(format("|cff2d61e3<|r|cff2f6af5AWR|r|cff2d61e3>|r |cff879ff5%s|r: %s (disabled)", UnitName("player"), AWR.Version))
+         end
+      else
+         for i, v in ipairs(sortedTable) do
+            local msg
+            if v.version then
+               msg = format("|cff2d61e3<|r|cff2f6af5AWR|r|cff2d61e3>|r |cff879ff5%s|r: %s", v.name, v.version)
+               if not v.state and UnitIsConnected(v.name) then
+                  msg = msg .. " (disabled)"
+               elseif not UnitIsConnected(v.name) then
+                  msg = msg .. " (offline)"
+               end
+            else
+               msg = format("|cff2d61e3<|r|cff2f6af5AWR|r|cff2d61e3>|r |cff879ff5%s|r: AWR not installed", v.name)
+            end
+            print(msg)
+         end
+         for i = #sortedTable, 1, -1 do
+            if not sortedTable[i].version then
+               table.remove(sortedTable, i)
+            end
+         end
+      end
+      print(format("|cff2d61e3<|r|cff2f6af5AWR|r|cff2d61e3>|r |cff879ff5Found|r |cfff0a71f%s|r |cff879ff5player%s with AWR|r",(#sortedTable > 1 and #sortedTable or 1),(#sortedTable > 1 and "s" or "")))
+      for i = #sortedTable, 1, -1 do
+         sortedTable[i] = nil
+      end
+   end
+end
+
 -- Slash commands functions
 -- toggle, on, off
 local function slashToggleAddon(state)
    if state or (not AWR.dbc.enabled and state==nil)  then
       AWR.dbc.enabled = true
+      AWR:ResetRaid()
+      AWR:RAID_ROSTER_UPDATE()
+      AWR:PARTY_MEMBERS_CHANGED()
    elseif not state or (AWR.dbc.enabled and state==nil) then
       AWR.dbc.enabled = false
+      sendSync("AWR-RW", "Hi!")
    end
    checkIfAddonShouldBeEnabled()
    send(AWR.dbc.enabled and "|cff00ff00on|r" or "|cffff0000off|r")
@@ -942,16 +1223,8 @@ end
 -- spec
 local function slashSpec()
    if(playerClass==nil) then send(AWR_ADDON_STILL_LOADING); return; end
-   updatePlayerClassAndSpec()
-   local spec = getPlayerSpec()
-   local class = playerClass
 
-   if class=="DEATHKNIGHT" then class = "Death Knight"
-   else class = upperFirstOnly(playerClass) end
-   if spec==nil then spec = "Unknown"
-   else spec = upperFirstOnly(spec) end
-
-   send(format(AWR_SPEC_MESSAGE,class,spec))
+   send(format(AWR_SPEC_MESSAGE,AWR:GetFormattedClassSpec()))
 end
 
 -- debug
@@ -959,9 +1232,11 @@ local function slashDebug()
    if not wrDebug then
       wrDebug = true
       AWR.db.debug = true
+      mind_control_spells_cast["DEBUG"] = 20217
    else
       wrDebug = false
       AWR.db.debug = false
+      mind_control_spells_cast["DEBUG"] = 0
    end
    send("debug mode turned " .. (wrDebug and "|cff00ff00on|r" or "|cffff0000off|r"))
    checkIfAddonShouldBeEnabled()
@@ -1082,7 +1357,7 @@ local function slashCommand(typed)
    elseif(cmd=="on" or cmd=="enable") then slashToggleAddon(true)
    elseif(cmd=="off" or cmd=="disable") then slashToggleAddon(false)
    elseif(cmd=="status" or cmd=="state" or cmd=="reason") then slashStatus()
-   elseif(cmd=="version" or cmd=="ver") then slashVersion()
+   elseif(cmd=="version" or cmd=="ver") then AWR:ShowVersions()
    elseif(cmd=="spec") then slashSpec()
    elseif(cmd=="removeweapon" or cmd=="removeweapons" or cmd=="rw") then onDominateMindCast(AWR_TEST_BOSS,0,true)
    elseif(cmd=="debug") then slashDebug()
@@ -1213,6 +1488,10 @@ function AWR:SetSpecState(info, spec, newValue)
    local class = info[#info]:upper()
    removeFor[format("%s_%s",class,spec)] = newValue
    self.db.removeFor = removeFor
+   if(class == playerClass and spec == getPlayerSpec() and playerClassAndSpec) then
+      local spec_state = format("%s\t%s",getPlayerSpec(),tostring(removeFor[playerClassAndSpec]))
+      sendSync("AWR-RW", spec_state)
+   end
 
    for k,v in pairs(specs[class:lower()]) do
       if k == spec then
@@ -1243,6 +1522,10 @@ function AWR:LoadDefaultDBValues()
    if self.dbc.weaponsRemovedCount            == nil then self.dbc.weaponsRemovedCount            = weaponsRemovedCount end
 end
 
+--------------
+--  OnLoad  --
+--------------
+
 function AWR:ADDON_LOADED(addon)
    if addon ~= "AutomaticWeaponRemoval" then return end
 
@@ -1264,7 +1547,6 @@ function AWR:ADDON_LOADED(addon)
    playerControlledCount = self.dbc.playerControlledCount
    weaponsRemovedCount = self.dbc.weaponsRemovedCount
 
-
    addonLanguage = self.db.addonLanguage or addonLanguage
    if self.db.addonLanguage==nil and GetRealmName():lower():find("brasil") then
       addonLanguage = "ptBR"
@@ -1275,11 +1557,18 @@ function AWR:ADDON_LOADED(addon)
    SLASH_AUTOMATICWEAPONREMOVAL1 = "/awr"
    SLASH_AUTOMATICWEAPONREMOVAL2 = "/automaticweaponremoval"
    SlashCmdList.AUTOMATICWEAPONREMOVAL = function(cmd) slashCommand(cmd) end
-   if wrDebug then send("remember that debug mode is |cff00ff00ON|r.") end
+   if wrDebug then
+      mind_control_spells_cast["DEBUG"] = 20217
+      send("remember that debug mode is |cff00ff00ON|r.")
+   end
 
    self:RegisterEvent("PLAYER_ENTERING_WORLD")
-   self:UnregisterEvent("ADDON_LOADED")
+   self:RegisterEvent("RAID_ROSTER_UPDATE")
+   self:RegisterEvent("PARTY_MEMBERS_CHANGED")
+   self:RegisterEvent("CHAT_MSG_ADDON")
+   self:QueueGetPlayerClassSpec()
    CH.callbacks:Fire("LOAD_LANGUAGE", addonLanguage)
+   self:UnregisterEvent("ADDON_LOADED")
    send(format(AWR_ADDON_LOADED,AWR.Version))
 end
 
