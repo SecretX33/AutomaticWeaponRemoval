@@ -821,12 +821,12 @@ function AWR:COMBAT_LOG_EVENT_UNFILTERED(timestamp, event, srcGUID, srcName, src
    if srcName ~= UnitName("player") and destName ~= UnitName("player") then return end -- The event if NOT from the player, so that is not relevant
 
    -- If spell from this table gets cast on player
-   if tableHasThisEntry(mind_control_spells_cast, spellID) and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
+   if (tableHasThisEntry(mind_control_spells_cast, spellID) or spellName == "Dominate Mind") and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and destName == UnitName("player") then
       if wrDebug then send(srcName .. " just casted " .. (GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " on the player.") end
       onDominateMindCast(srcName, spellID)
 
    -- Else if spell from this table fades from player
-   elseif tableHasThisEntry(mind_control_spells_fade, spellID) and event == "SPELL_AURA_REMOVED" and destName == UnitName("player") then
+   elseif (tableHasThisEntry(mind_control_spells_fade, spellID) or spellName == "Dominate Mind") and event == "SPELL_AURA_REMOVED" and destName == UnitName("player") then
       if wrDebug then send((GetSpellLink(spellID) and GetSpellLink(spellID) or "") .. " just faded from the player.") end
       onDominateMindFade()
 
@@ -1142,7 +1142,7 @@ end
 
 function AWR:SetChannel(info, newChannel)
    assert(newChannel~=nil, "bad argument #2: 'newChannel' cannot be nil")
-   assert(type(newChannel) == "string", "bad argument #2: 'newChannel' needs to be a string; instead what came was " .. tostring(type(newChannel)))
+   assert(type(newChannel) == "number", "bad argument #2: 'newChannel' needs to be a number; instead what came was " .. tostring(type(newChannel)))
 
    newChannel = validChannels[newChannel]
    channelToSendMessage = newChannel

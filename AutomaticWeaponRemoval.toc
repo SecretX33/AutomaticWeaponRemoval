@@ -4,7 +4,7 @@
 ## Title: AutomaticWeaponRemoval
 ## Notes: Remove (swap) your weapons automatically when bosses like Lady cast Mind Control on you.
 ## Author: SecretX (Freezingice @ WoW-Brasil)
-## Version: 1.2.1
+## Version: 1.2.3
 ## SavedVariables: AWRDB
 ## SavedVariablesPerCharacter: AWRDBC
 ## OptionalDeps: BugSack, !Swatter
