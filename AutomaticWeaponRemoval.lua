@@ -891,7 +891,15 @@ do
    syncHandlers["AWR-RW"] = function(msg, channel, sender)
       if msg == "Hi!" then
          if playerClassAndSpec then
-            local state = (AWR.dbc.enabled and removeFor[playerClassAndSpec])
+            local state
+            if not AWR.dbc.enabled then
+               state = 0
+            elseif not removeFor[playerClassAndSpec] then
+               state = 1
+            else
+               state = 2
+            end
+
             local spec_state = format("%s\t%s",getPlayerSpec(),tostring(state))
             sendSync("AWR-RW", spec_state)
          else
@@ -899,9 +907,9 @@ do
          end
       else
          local spec, state = string.split("\t", msg)
-         state = (state=="true")
+         state = tonumber(state or 0)
          if sender and sender~="" then
-            if wrDebug then send(format("%s sent you his spec (%s) and state (%s)",sender,(spec~=nil and spec or "Unknown"),(state~=nil and tostring(state) or "unknown"))) end
+            if wrDebug then send(format("%s sent you his spec (%s) and state (%s)",sender,(spec~=nil and spec or "Unknown"),tostring(state))) end
             raid[sender] = raid[sender] or {}
             raid[sender].spec = spec~=nil and spec or "Unknown"
             raid[sender].state = state
@@ -1127,7 +1135,7 @@ function AWR:PLAYER_ENTERING_WORLD()
 end
 
 do
-   local function sortVersion(v1, v2)
+   local function sort(v1, v2)
       if not v1 then return false end
       if not v2 then return true end
       if not v1.version then return false end
@@ -1154,22 +1162,24 @@ do
          if v~=nil then table.insert(sortedTable, v) end
       end
       print("|cff2d61e3<|r|cff2f6af5AWR|r|cff2d61e3>|r |cff879ff5AWR - Versions|r")
-      if getTableLength(sortedTable) > 1 then table.sort(sortedTable, sortVersion) end
+      if getTableLength(sortedTable) > 1 then table.sort(sortedTable, sort) end
       if getTableLength(sortedTable) == 0 then
          if AWR.Version and AWR.dbc.enabled then
             print(format("|cff2d61e3<|r|cff2f6af5AWR|r|cff2d61e3>|r |cff879ff5%s|r: %s", UnitName("player"), AWR.Version))
          else
-            print(format("|cff2d61e3<|r|cff2f6af5AWR|r|cff2d61e3>|r |cff879ff5%s|r: %s (disabled)", UnitName("player"), AWR.Version))
+            print(format("|cff2d61e3<|r|cff2f6af5AWR|r|cff2d61e3>|r |cff879ff5%s|r: %s (addon is turned |cffff0000off|r)", UnitName("player"), AWR.Version))
          end
       else
          for i, v in ipairs(sortedTable) do
             local msg
             if v.version then
                msg = format("|cff2d61e3<|r|cff2f6af5AWR|r|cff2d61e3>|r |cff879ff5%s|r: %s", v.name, v.version)
-               if not v.state and UnitIsConnected(v.name) then
-                  msg = msg .. " (disabled)"
-               elseif not UnitIsConnected(v.name) then
+               if not UnitIsConnected(v.name) then
                   msg = msg .. " (offline)"
+               elseif v.state == 1 then
+                  msg = msg .. " (weapon removal for spec turned |cffff0000off|r)"
+               elseif v.state == 0 then
+                  msg = msg .. " (addon is turned |cffff0000off|r)"
                end
             else
                msg = format("|cff2d61e3<|r|cff2f6af5AWR|r|cff2d61e3>|r |cff879ff5%s|r: AWR not installed", v.name)
