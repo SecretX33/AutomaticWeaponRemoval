@@ -13,7 +13,7 @@ OR if you want to download an earlier version of the addon, you can do it by che
 
 This addon is made for World of Warcraft 3.3.5a
 
-This addon remove (swap) your weapons automatically if you are melee and get controlled by a variety of bosses, like Lady Deathwhisper, and a lot more, like removing Paladin's RF buff if you are not a tank.
+This addon remove (swap) your weapons automatically if you are melee and get mind controlled by a variety of bosses, like Lady Deathwhisper, and a lot more, like removing Paladin's RF buff if you are not a tank.
 
 Configs are done via interface or slash commands.
 
