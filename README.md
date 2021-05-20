@@ -17,29 +17,28 @@ This addon remove (swap) your weapons automatically if you are melee and get min
 
 Configs are done via interface or slash commands.
 
-------------
 
-**Slash commands:**
+## Slash commands
 
-/awr or /automaticweaponremoval - Show addon help
+**/awr** or **/automaticweaponremoval** - Show addon help
 
-/awr toggle - Toggle addon on and off
+**/awr toggle** - Toggle addon on and off
 
-/awr on/off - Turn addon on or off
+**/awr on/off** - Turn addon on or off
 
-/awr message *"your_message"* - Change the message that you will say when you get controled
+**/awr message *"your_message"*** - Change the message that you will say when you get controled
 
-/awr channel *"your_channel"* - Change the channel where you will send the message
+**/awr channel *"your_channel"*** - Change the channel where you will send the message
 
-/awr removeweapon - Simulate what addon will do when "Test Boss" controls you
+**/awr removeweapon** - Simulate what addon will do when "Test Boss" controls you
 
-/awr count - See how many you have been controlled and how many times the addon has unequipped your weapons
+**/awr count** - See how many you have been controlled and how many times the addon has unequipped your weapons
 
-/awr spec - See what class and spec you are
+**/awr spec** - See what class and spec you are
 
-/awr status - Show if addon is on/off and why, very useful to double check current addon state
+**/awr status** - Show if addon is on/off and why, very useful to double check current addon state
 
-/awr version - Show addon version
+**/awr version** - Show addon version
 
 ## FAQ
 
